@@ -1,0 +1,12 @@
+﻿#ifndef KRAB_IMITATOR_GLOBAL_H
+#define KRAB_IMITATOR_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(KRAB_IMITATOR_LIBRARY)
+#  define KRAB_IMITATOR_EXPORT Q_DECL_EXPORT
+#else
+#  define KRAB_IMITATOR_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // KRAB_IMITATOR_GLOBAL_H

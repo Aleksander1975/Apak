@@ -1,0 +1,12 @@
+﻿#ifndef GAMMA_IMITATOR_GLOBAL_H
+#define GAMMA_IMITATOR_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(GAMMA_IMITATOR_LIBRARY)
+#  define GAMMA_IMITATOR_EXPORT Q_DECL_EXPORT
+#else
+#  define GAMMA_IMITATOR_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // GAMMA_IMITATOR_GLOBAL_H
