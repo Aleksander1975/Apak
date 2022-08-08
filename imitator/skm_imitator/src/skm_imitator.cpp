@@ -153,7 +153,7 @@ void apak::SvSkmImitator::send()
 //    memcpy(&p_io_buffer->output->data[0], send_data.data(), send_data.length());
 //    p_io_buffer->output->offset = send_data.length();
 
-    emit message(QString(send_data), lldbg, sv::log::mtNew);
+    emit message(QString(send_data.toHex()), lldbg, sv::log::mtNew);
 
     p_io_buffer->output->setReady(true);
     emit p_io_buffer->readyWrite(p_io_buffer->output);

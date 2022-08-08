@@ -7,9 +7,9 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
-#include "../../../../../../svlib/SvException/svexception.h"
-#include "../../../../../../Modus/global/global_defs.h"
-//#include "../../../../../Modus/global/device/device_defs.h"
+#include "../../../../svlib/SvException/svexception.h"
+#include "../../../../Modus/global/global_defs.h"
+//#include "../../../../Modus/global/device/device_defs.h"
 
 #define P_ABONENT  "abonent"
 #define P_ACTIVITY "activity"

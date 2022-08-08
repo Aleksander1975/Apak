@@ -19,14 +19,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    ../../../../../../Modus/global/signal/sv_signal.cpp \
+    ../../../../Modus/global/signal/sv_signal.cpp \
     skm_imitator.cpp
 
 HEADERS += \
-    ../../../../../../Modus/global/device/protocol/sv_abstract_protocol.h \
-    ../../../../../../Modus/global/global_defs.h \
+    ../../../../Modus/global/device/protocol/sv_abstract_protocol.h \
+    ../../../../Modus/global/global_defs.h \
+    ../../../../Modus/global/signal/sv_signal.h \
+    ../../../../Modus/global/device/device_defs.h \
     skm_imitator_global.h \
-    ../../../../../../Modus/global/signal/sv_signal.h \
     skm_imitator.h \
     protocol_params.h
 

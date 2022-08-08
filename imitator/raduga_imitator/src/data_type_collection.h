@@ -4,7 +4,8 @@
 #include <QObject>
 #include <QList>
 
-#include "../../../../../../../ProjectData/APAK/job/ZNRecovery/lib/radga/raduga_defs.h"
+#include "../../../recovery/lib/radga/raduga_defs.h"
+#include "abstract_signal_collection.h"
 
 namespace raduga {
 

@@ -3,7 +3,15 @@
 apak::SvKrabImitator::SvKrabImitator():
   modus::SvAbstractProtocol()
 {
+    // Очистим словарь, который каждому номеру бита (от 0 до 66*8-1) из битового массива
+    // "m_bitsPacket" ставит в соответствие сигнал, бит которого должен быть записан
+    // в массив "m_bitsPacket":
+    m_signal_by_bitNumberInPacket.clear();
 
+    // Очистим словарь, который каждому номеру бита (от 0 до 66*8-1) из битового массива
+    // "m_bitsPacket" ставит в соответствие номер бита сигнала, который
+    // должен быть записан в массив "m_bitsPacket":
+    m_bitNumberInSignal_by_bitNumberInPacket.clear();
 }
 
 apak::SvKrabImitator::~SvKrabImitator()
@@ -18,7 +26,7 @@ bool apak::SvKrabImitator::configure(modus::DeviceConfig *config, modus::IOBuffe
     p_config = config;
     p_io_buffer = iobuffer;
 
-    m_params = hmi::ProtocolParams::fromJson(p_config->protocol.params);
+    m_params = krab::ProtocolParams::fromJson(p_config->protocol.params);
 
     return true;
 
@@ -26,7 +34,6 @@ bool apak::SvKrabImitator::configure(modus::DeviceConfig *config, modus::IOBuffe
 
     p_last_error = e.error;
     return false;
-
   }
 }
 
@@ -36,38 +43,48 @@ bool apak::SvKrabImitator::bindSignal(modus::SvSignal *signal, modus::SignalBind
 
     bool r = modus::SvAbstractProtocol::bindSignal(signal, binding);
 
-    m_max_byte = 0;
+    // Заполняем структуру SignalParams параметрами конкретного сигнала устройства КРАБ:
+    // количеством байт от начала пакета (параметр "byte"), количеством бит от начала байта
+    // (параметр "оffset"), размером области бит, которая хранит значение сигнала (параметр "len").
 
-    if(r) {
+    // Для КРАБ'a параметры сигнала ("byte", "offset" и "len") задаются не в разделе "bindings"
+    // каждого сигнала из файла сигналов "krab.json", а прямо в разделе сигнала.
+    // Поэтому аргументом функции SignalParams::fromJson() будет не "binding.params",
+    // а "signal->config()->params".
+    krab::SignalParams signal_params = krab::SignalParams::fromJson(signal->config()->params);
 
-      if(binding.mode == modus::Master) {
+    if(r)
+    {
 
-        m_input_signals.insert(signal, hmi::SignalParams());
-
+      if(binding.mode == modus::Master)
+      {
       }
-      else {
+      else
+      {
+          // Заполняем соответствующие сигналу, на который указывает аргумент "signal"
+          // функции  "bindSignal", поля в структурах данных "m_signal_by_bitNumberInPacket"
+          // и "m_bitNumberInSignal_by_bitNumberInPacket".
 
-        //! параметры params для каждого свои! для master'a свои, а для bindings - свои
-        hmi::SignalParams params = hmi::SignalParams::fromJson(binding.params);
-        m_params_by_signals.insert(signal, params);
+          // В цикле for () будем проходить по всем номерам битов сигнала (от 0 до "len").
+          // В переменной цикла "bitNumberInSignal" будем хранить текущий номер бита сигнала.
+          for (uint8_t bitNumberInSignal = 0; bitNumberInSignal < signal_params.len; bitNumberInSignal++)
+          {
+              m_signal_by_bitNumberInPacket [signal_params.byte * 8 + signal_params.offset +
+                      bitNumberInSignal] = signal;
 
-        std::pair<uint8_t, modus::SvSignal*> pair(params.byte, signal);
-        m_signals_by_byte_number.insert(pair);
-
-        if(params.byte > m_max_byte)
-          m_max_byte = params.byte;
-
+              m_bitNumberInSignal_by_bitNumberInPacket [signal_params.byte * 8 +
+                      signal_params.offset + bitNumberInSignal] = bitNumberInSignal;
+          }
       }
-    }
+    } // if (r)
 
     return r;
 
-  }
+  } // try
   catch(SvException& e) {
 
     p_last_error = e.error;
     return false;
-
   }
 }
 
@@ -83,16 +100,14 @@ void apak::SvKrabImitator::signalChanged(modus::SvSignal* signal)
 
 void apak::SvKrabImitator::start()
 {
-  QTimer* m_timer = new QTimer;
-  connect(m_timer, &QTimer::timeout, this, &SvKrabImitator::putout);
+  m_timer = new QTimer;
+  connect(m_timer, &QTimer::timeout, this, &SvKrabImitator::send);
   m_timer->start(m_params.interval);
-
-//  connect(p_io_buffer, &modus::IOBuffer::dataReaded, this, &SvGammaOpaImitator::parse);
 
   p_is_active = bool(p_config) && bool(p_io_buffer);
 }
 
-void apak::SvKrabImitator::putout()
+void apak::SvKrabImitator::send()
 {
   std::vector<uint8_t> values;
   values.reserve(m_max_byte + 1);

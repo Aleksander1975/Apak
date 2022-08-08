@@ -6,18 +6,18 @@
 
 #include "raduga_imitator_global.h"
 
-#include "../../../../../../Modus/global/device/protocol/sv_abstract_protocol.h"
-#include "../../../../../../Modus/global/signal/sv_signal.h"
+#include "../../../../Modus/global/device/protocol/sv_abstract_protocol.h"
+#include "../../../../Modus/global/signal/sv_signal.h"
 
 #include "protocol_params.h"
-#include "../../../../../../../ProjectData/APAK/job/ZNRecovery/lib/radga/raduga_defs.h"
 #include "abstract_signal_collection.h"
-
 #include "data_type_collection.h"
 
-#include "../../../../../../svlib/SvAbstractLogger/svabstractlogger.h"
-#include "../../../../../../svlib/SvException/svexception.h"
-#include "../../../../../../svlib/SvCRC/1.0/sv_crc.h"
+#include "../../../recovery/lib/radga/raduga_defs.h"
+
+#include "../../../../svlib/SvAbstractLogger/svabstractlogger.h"
+#include "../../../../svlib/SvException/svexception.h"
+#include "../../../../svlib/SvCRC/1.0/sv_crc.h"
 
 extern "C" {
 
@@ -31,8 +31,8 @@ extern "C" {
 
 
 
-const int  RDGA_NAME_LEN = 12;
-const char RDGA_NAME[SYSTEM_NAME_LEN] = {'R','a','d','u','g','a','-','2','0','3','8','6','\0','\0','\0','\0' };
+//const int  RDGA_NAME_LEN = 12;
+//const char RDGA_NAME[SYSTEM_NAME_LEN] = {'R','a','d','u','g','a','-','2','0','3','8','6','\0','\0','\0','\0' };
 
 
 #define GOOD_PARSED   0

@@ -1,0 +1,26 @@
+﻿<RCC>
+  <qresource prefix="/">
+    <file>../res/icons/Cancel.ico</file>
+    <file>../res/icons/Health.ico</file>
+    <file>../res/icons/Stats.ico</file>
+    <file>../res/icons/Folder open.ico</file>
+    <file>../res/icons/Ok2.ico</file>
+    <file>../res/icons/Refresh.ico</file>
+    <file>../res/icons/Search.ico</file>
+    <file>../res/icons/Zoom in.ico</file>
+    <file>../res/icons/Zoom out.ico</file>
+    <file>../res/icons/Back.ico</file>
+    <file>../res/icons/Cancel.ico</file>
+    <file>../res/icons/Health.ico</file>
+    <file>../res/icons/Pen.ico</file>
+    <file>../res/icons/arrow-left3.ico</file>
+    <file>../res/icons/Refresh.ico</file>
+    <file>../res/icons/arrow-right3.ico</file>
+    <file>../res/icons/button-synchronize3.ico</file>
+    <file>../res/icons/chart-bar-up2.ico</file>
+    <file>../res/icons/oscilloscope3.ico</file>
+    <file>../res/icons/search3.ico</file>
+    <file>../res/icons/zoom-in3.ico</file>
+    <file>../res/icons/zoom-out3.ico</file>
+  </qresource>
+</RCC>

@@ -1,7 +1,9 @@
 ﻿#ifndef ABSTRACT_SIGNAL_COLLECTION
 #define ABSTRACT_SIGNAL_COLLECTION
 
-#include "/home/user/job/Modus/global/signal/sv_signal.h"
+#include "../../../../Modus/global/signal/sv_signal.h"
+#include "../../../../Modus/global/device/device_defs.h"
+#include "../../../recovery/lib/radga/raduga_defs.h"
 
 namespace raduga {
 
