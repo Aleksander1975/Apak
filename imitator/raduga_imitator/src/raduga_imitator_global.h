@@ -1,0 +1,12 @@
+﻿#ifndef RADUGA_IMITATOR_GLOBAL_H
+#define RADUGA_IMITATOR_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(RADUGA_IMITATOR_LIBRARY)
+#  define RADUGA_IMITATOR_EXPORT Q_DECL_EXPORT
+#else
+#  define RADUGA_IMITATOR_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // RADUGA_IMITATOR_GLOBAL_H

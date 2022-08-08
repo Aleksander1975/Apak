@@ -1,0 +1,12 @@
+﻿#ifndef IV1_IMITATOR_GLOBAL_H
+#define IV1_IMITATOR_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(IV1_IMITATOR_LIBRARY)
+#  define IV1_IMITATOR_EXPORT Q_DECL_EXPORT
+#else
+#  define IV1_IMITATOR_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // IV1_IMITATOR_GLOBAL_H

@@ -1,0 +1,14 @@
+{
+    "params": {
+        "full_file_name": "",
+        "host": "192.16.11.200",
+        "level": "info",
+        "pass": "",
+        "port": 10000,
+        "read_buf": 10240,
+        "read_type": "all",
+        "start_byte": 0,
+        "timeout": 1000,
+        "zone": "data1"
+    }
+}

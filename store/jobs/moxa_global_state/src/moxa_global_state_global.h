@@ -1,0 +1,12 @@
+﻿#ifndef MOXA_GLOBAL_STATE_GLOBAL_H
+#define MOXA_GLOBAL_STATE_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(MOXA_GLOBAL_STATE_LIBRARY)
+#  define MOXA_GLOBAL_STATE_EXPORT Q_DECL_EXPORT
+#else
+#  define MOXA_GLOBAL_STATE_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // MOXA_GLOBAL_STATE_GLOBAL_H

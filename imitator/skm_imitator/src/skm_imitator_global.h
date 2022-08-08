@@ -1,0 +1,12 @@
+﻿#ifndef SKM_IMITATOR_GLOBAL_H
+#define SKM_IMITATOR_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(SKM_IMITATOR_LIBRARY)
+#  define SKM_IMITATOR_EXPORT Q_DECL_EXPORT
+#else
+#  define SKM_IMITATOR_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // SKM_IMITATOR_GLOBAL_H
