@@ -22,6 +22,10 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # ссылок (undefined references) при сборке разделяемой библиотеки:
 QMAKE_LFLAGS += -Wno-unused-variable, -Wl,--no-undefined
 
+CONFIG (release) {
+    DEFINES += QT_NO_DEBUG_OUTPUT
+}
+
 SOURCES += \
     ../../../../Modus/global/signal/sv_signal.cpp \
     iv1_imitator.cpp
