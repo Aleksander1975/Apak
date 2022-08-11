@@ -12,11 +12,11 @@ CONFIG += c++11 plugin
 DEFINES += ZN_SKM_LIBRARY
 
 SOURCES += skm.cpp \
-    ../../../../../../../c++/Modus/global/signal/sv_signal.cpp
+    ../../../../../../job/Modus/global/signal/sv_signal.cpp
 
 HEADERS += ../../../zn_abstract_outer_system.h \
     ../skm_defs.h \
-    ../../../../../../../c++/Modus/global/signal/sv_signal.h \
+    ../../../../../../job/Modus/global/signal/sv_signal.h \
     skm.h \
     skm_global.h
 

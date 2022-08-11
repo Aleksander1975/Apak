@@ -11,7 +11,7 @@
 
 #include "zn_select_dialog.h"
 #include "zn_reader.h"
-#include "../../../../../../c++/svlib/SvWidgetLogger/1.1/sv_widget_logger.h"
+#include "../../../../../job/svlib/SvWidgetLogger/1.1/sv_widget_logger.h"
 
 namespace Ui {
   class MainWindow;

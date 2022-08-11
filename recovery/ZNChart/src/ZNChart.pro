@@ -17,11 +17,11 @@ SOURCES += main.cpp\
     treemodel.cpp \
     sv_chartwidget.cpp \
     sv_graph.cpp \
-    ../../../../../../c++/qcustomplot/qcustomplot.cpp \
-    ../../../../../../c++/svlib/SvSettings/1.0/sv_settings.cpp \
-    ../../../../../../c++/Modus/global/signal/sv_signal.cpp \
-    ../../../../../../c++/svlib/SvAbstractLogger/1.2/sv_abstract_logger.cpp \
-    ../../../../../../c++/svlib/SvProgressBarDialog/1.0/progressbar_dialog.cpp \
+    ../../../../../job/qcustomplot/qcustomplot.cpp \
+    ../../../../../job/svlib/SvSettings/1.0/sv_settings.cpp \
+    ../../../../../job/Modus/global/signal/sv_signal.cpp \
+    ../../../../../job/svlib/SvAbstractLogger/1.2/sv_abstract_logger.cpp \
+    ../../../../../job/svlib/SvProgressBarDialog/1.0/progressbar_dialog.cpp \
     zn_select_data_dialog.cpp
 
 HEADERS  += mainwindow.h \
@@ -31,23 +31,23 @@ HEADERS  += mainwindow.h \
     treemodel.h \
     ../../recovery_defs.h \
     ../../zn_abstract_outer_system.h \
-    ../../../../../../c++/qcustomplot/qcustomplot.h \
-    ../../../../../../c++/svlib/SvException/1.1/sv_exception.h \
-    ../../../../../../c++/svlib/SvSettings/1.0/sv_settings.h \
-    ../../../../../../c++/Modus_Libs/APAK/storages/zn_k1/src/zn_global.h \
-    ../../../../../../c++/Modus/global/signal/sv_signal.h \
-    ../../../../../../c++/svlib/SvAbstractLogger/1.2/sv_abstract_logger.h \
-    ../../../../../../c++/Modus/global/device/protocol/sv_abstract_protocol.h \
-    ../../../../../../c++/svlib/SvProgressBarDialog/1.0/progressbar_dialog.h \
+    ../../../../../job/qcustomplot/qcustomplot.h \
+    ../../../../../job/svlib/SvException/1.1/sv_exception.h \
+    ../../../../../job/svlib/SvSettings/1.0/sv_settings.h \
+    ../../../../../job/Modus_Libs/APAK/storages/zn_k1/src/zn_global.h \
+    ../../../../../job/Modus/global/signal/sv_signal.h \
+    ../../../../../job/svlib/SvAbstractLogger/1.2/sv_abstract_logger.h \
+    ../../../../../job/Modus/global/device/protocol/sv_abstract_protocol.h \
+    ../../../../../job/svlib/SvProgressBarDialog/1.0/progressbar_dialog.h \
     zn_select_data_dialog.h
 
 FORMS    += mainwindow.ui \
     sv_chartwidget.ui \
-    ../../../../../../c++/svlib/SvProgressBarDialog/1.0/progressbar_dialog.ui \
+    ../../../../../job/svlib/SvProgressBarDialog/1.0/progressbar_dialog.ui \
     zn_select_data_dialog.ui \
     sv_graph_params_dialog.ui
 
-INCLUDEPATH += ../../../../../../c++/qcustomplot
+INCLUDEPATH += ../../../../../job/qcustomplot
 
 RESOURCES += \
     res.qrc

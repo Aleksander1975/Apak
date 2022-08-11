@@ -6,8 +6,8 @@
 #include <QFileInfo>
 #include <QMessageBox>
 
-#include "../../../../../../c++/svlib/SvProgressBarDialog/1.0/progressbar_dialog.h"
-#include "../../../../../../c++/svlib/SvSettings/1.0/sv_settings.h"
+#include "../../../../svlib/SvProgressBarDialog/1.0/progressbar_dialog.h"
+#include "../../../../svlib/SvSettings/1.0/sv_settings.h"
 #include "../../recovery_defs.h"
 #include "../../zn_abstract_outer_system.h"
 

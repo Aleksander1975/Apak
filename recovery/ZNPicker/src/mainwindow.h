@@ -13,8 +13,8 @@
 #include "zn_picker.h"
 #include "../../recovery_defs.h"
 
-#include "../../../../../../c++/svlib/SvWidgetLogger/1.1/sv_widget_logger.h"
-#include "../../../../../../c++/svlib/SvSettings/1.0/sv_settings.h"
+#include "../../../../../job/svlib/SvWidgetLogger/1.1/sv_widget_logger.h"
+#include "../../../../../job/svlib/SvSettings/1.0/sv_settings.h"
 
 namespace Ui {
   class MainWindow;

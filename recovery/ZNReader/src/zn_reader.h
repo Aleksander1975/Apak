@@ -10,14 +10,14 @@
 //#include <QTcpSocket>
 #include <QThread>
 
-#include "../../../../../../c++/Modus_Libs/APAK/global_apak_defs.h"
-#include "../../../../../../c++/svlib/Network/Tcp/Client/1.0/sv_tcp_client.h"
-#include "../../../../../../c++/svlib/SvException/svexception.h"
-#include "../../../../../../c++/svlib/SvCRC/1.1/sv_crc.h"
-#include "../../../../../../c++/svlib/SvAbstractLogger/svabstractlogger.h"
+#include "../../../../../job/Modus_Libs/APAK/global_apak_defs.h"
+#include "../../../../../job/svlib/Network/Tcp/Client/1.0/sv_tcp_client.h"
+#include "../../../../../job/svlib/SvException/svexception.h"
+#include "../../../../../job/svlib/SvCRC/1.1/sv_crc.h"
+#include "../../../../../job/svlib/SvAbstractLogger/svabstractlogger.h"
 
-//#include "../../../../c++/Modus/global/storage/sv_abstract_storage.h"
-//#include "../../../../c++/Modus/global/dbus/sv_dbus.h"
+//#include "../../../job/Modus/global/storage/sv_abstract_storage.h"
+//#include "../../../job/Modus/global/dbus/sv_dbus.h"
 
 #include "../../recovery_defs.h"
 

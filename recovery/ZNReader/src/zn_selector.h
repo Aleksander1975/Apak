@@ -17,9 +17,9 @@
 #include "ui_select_zn_dialog.h"
 #include "zn_reader_defs.h"
 
-#include "../../../../../c++/Modus/global/global_defs.h"
+#include "../../../../job/Modus/global/global_defs.h"
 
-#include "../../../../../c++/svlib/SvException/svexception.h"
+#include "../../../../job/svlib/SvException/svexception.h"
 
 namespace Ui {
   class SelectZNDialog;

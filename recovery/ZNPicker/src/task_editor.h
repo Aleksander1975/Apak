@@ -10,7 +10,7 @@
 
 #include "ui_task_editor_dialog.h"
 
-#include "../../../../../../c++/svlib/SvException/svexception.h"
+#include "../../../../../job/svlib/SvException/svexception.h"
 #include "../../recovery_defs.h"
 #include "zn_select_system_dialog.h"
 

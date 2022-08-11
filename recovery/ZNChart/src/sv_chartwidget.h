@@ -42,10 +42,10 @@
 #include <QtCore/QTime>
 #include <QtCore/QDebug>
 
-#include "../../../../../../c++/qcustomplot/qcustomplot.h"
-#include "../../../../../../c++/svlib/SvException/1.1/sv_exception.h"
+#include "../../../../../job/qcustomplot/qcustomplot.h"
+#include "../../../../../job/svlib/SvException/1.1/sv_exception.h"
 
-#include "../../../../../../c++/Modus/global/global_defs.h"
+#include "../../../../../job/Modus/global/global_defs.h"
 #include "../../recovery_defs.h"
 
 #include "sv_graph.h"

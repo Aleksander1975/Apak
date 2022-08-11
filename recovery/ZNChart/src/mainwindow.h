@@ -4,9 +4,9 @@
 #include <QMainWindow>
 #include <QPair>
 
-//#include "../../../../../../c++/Modus_Libs/APAK/storages/zn_k1/src/zn_global.h"
+//#include "../../../../../job/Modus_Libs/APAK/storages/zn_k1/src/zn_global.h"
 
-#include "../../../../../../c++/svlib/SvSettings/1.0/sv_settings.h"
+#include "../../../../../job/svlib/SvSettings/1.0/sv_settings.h"
 //#include "../../recovery_defs.h"
 #include "sv_chartwidget.h"
 #include "zn_select_data_dialog.h"

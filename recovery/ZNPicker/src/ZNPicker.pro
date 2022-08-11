@@ -16,23 +16,23 @@ CONFIG += c++11
 SOURCES += main.cpp\
         mainwindow.cpp \
     task_editor.cpp \
-    ../../../../../../c++/svlib/SvAbstractLogger/1.2/sv_abstract_logger.cpp \
-    ../../../../../../c++/svlib/SvWidgetLogger/1.1/sv_widget_logger.cpp \
-    ../../../../../../c++/svlib/SvSettings/1.0/sv_settings.cpp \
+    ../../../../../job/svlib/SvAbstractLogger/1.2/sv_abstract_logger.cpp \
+    ../../../../../job/svlib/SvWidgetLogger/1.1/sv_widget_logger.cpp \
+    ../../../../../job/svlib/SvSettings/1.0/sv_settings.cpp \
     zn_picker.cpp \
-    ../../../../../../c++/Modus/global/signal/sv_signal.cpp \
+    ../../../../../job/Modus/global/signal/sv_signal.cpp \
     zn_select_system_dialog.cpp
 
 HEADERS  += mainwindow.h \
     task_editor.h \
-    ../../../../../../c++/svlib/SvAbstractLogger/1.2/sv_abstract_logger.h \
+    ../../../../../job/svlib/SvAbstractLogger/1.2/sv_abstract_logger.h \
 #    ../../ZNReader/src/zn_reader_defs.h \
-    ../../../../../../c++/Modus_Libs/APAK/storages/zn_k1/src/zn_global.h \
-    ../../../../../../c++/svlib/SvWidgetLogger/1.1/sv_widget_logger.h \
-    ../../../../../../c++/svlib/SvSettings/1.0/sv_settings.h \
+    ../../../../../job/Modus_Libs/APAK/storages/zn_k1/src/zn_global.h \
+    ../../../../../job/svlib/SvWidgetLogger/1.1/sv_widget_logger.h \
+    ../../../../../job/svlib/SvSettings/1.0/sv_settings.h \
     zn_picker.h \
     ../../recovery_defs.h \
-    ../../../../../../c++/Modus/global/signal/sv_signal.h \
+    ../../../../../job/Modus/global/signal/sv_signal.h \
     zn_select_system_dialog.h
 
 FORMS    += mainwindow.ui \

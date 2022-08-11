@@ -12,11 +12,11 @@ CONFIG += c++11 plugin
 DEFINES += ZN_RADGA_LIBRARY
 
 SOURCES += radga.cpp \
-    ../../../../../../../c++/Modus/global/signal/sv_signal.cpp
+    ../../../../../../job/Modus/global/signal/sv_signal.cpp
 
 HEADERS += ../../../zn_abstract_outer_system.h \
     ../raduga_defs.h \
-    ../../../../../../../c++/Modus/global/signal/sv_signal.h \
+    ../../../../../../job/Modus/global/signal/sv_signal.h \
     radga.h \
     radga_global.h
 

@@ -3,7 +3,7 @@
 
 #include <QtCore>
 
-#include "../../../../c++/Modus/global/signal/sv_signal.h"
+#include "../../job/Modus/global/signal/sv_signal.h"
 
 
 namespace zn1 {

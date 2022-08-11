@@ -16,21 +16,21 @@ CONFIG += c++11
 SOURCES += main.cpp\
         mainwindow.cpp \
     zn_reader.cpp \
-    ../../../../../../c++/svlib/SvAbstractLogger/1.2/sv_abstract_logger.cpp \
-    ../../../../../../c++/svlib/SvWidgetLogger/1.1/sv_widget_logger.cpp \
-    ../../../../../../c++/svlib/Network/Tcp/Client/1.0/sv_tcp_client.cpp \
+    ../../../../../job/svlib/SvAbstractLogger/1.2/sv_abstract_logger.cpp \
+    ../../../../../job/svlib/SvWidgetLogger/1.1/sv_widget_logger.cpp \
+    ../../../../../job/svlib/Network/Tcp/Client/1.0/sv_tcp_client.cpp \
     zn_select_dialog.cpp \
-    ../../../../../../c++/Modus/global/signal/sv_signal.cpp
+    ../../../../../job/Modus/global/signal/sv_signal.cpp
 
 HEADERS  += mainwindow.h \
     zn_reader.h \
-    ../../../../../../c++/svlib/SvAbstractLogger/1.2/sv_abstract_logger.h \
-    ../../../../../../c++/svlib/SvWidgetLogger/1.1/sv_widget_logger.h \
-    ../../../../../../c++/svlib/Network/Tcp/Client/1.0/sv_tcp_client.h \
-    ../../../../../../c++/Modus_Libs/APAK/storages/zn_k1/src/zn_global.h \
+    ../../../../../job/svlib/SvAbstractLogger/1.2/sv_abstract_logger.h \
+    ../../../../../job/svlib/SvWidgetLogger/1.1/sv_widget_logger.h \
+    ../../../../../job/svlib/Network/Tcp/Client/1.0/sv_tcp_client.h \
+    ../../../../../job/Modus_Libs/APAK/storages/zn_k1/src/zn_global.h \
     zn_select_dialog.h \
     ../../recovery_defs.h \
-    ../../../../../../c++/Modus/global/signal/sv_signal.h
+    ../../../../../job/Modus/global/signal/sv_signal.h
 
 FORMS    += mainwindow.ui \
     select_zn_dialog.ui

@@ -6,9 +6,9 @@
 #include <QDebug>
 #include <QtNetwork/qhostaddress.h>
 
-#include "../../../../c++/Modus/global/signal/sv_signal.h"
-#include "../../../../c++/Modus_Libs/APAK/storages/zn_k1/src/zn_global.h"
-#include "../../../../c++/svlib/SvAbstractLogger/svabstractlogger.h"
+#include "../../../job/Modus/global/signal/sv_signal.h"
+#include "../../../job/Modus_Libs/APAK/storages/zn_k1/src/zn_global.h"
+#include "../../../job/svlib/SvAbstractLogger/svabstractlogger.h"
 
 // имена параметров (отсутствующие в global_defs.h)
 #define P_GLOBAL                  "global"
