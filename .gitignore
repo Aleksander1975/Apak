@@ -50,3 +50,16 @@ compile_commands.json
 
 # QtCreator local machine specific files for imported projects
 *creator.user*
+_raduga-20386/sheksna/build/
+imitator/gamma_imitator/build/
+imitator/krab_imitator/build/
+store/moxa/build/
+store/kson_xz/build/
+store/kson/build/
+imitator/skm_imitator/build/
+store/ups/build/
+imitator/raduga_imitator/build/
+store/universal_packet/build/
+store/upz/build/
+imitator/iv1_imitator/build/
+imitator/gamma_opa_imitator/build/
