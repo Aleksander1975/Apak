@@ -7,7 +7,7 @@
 #include <QtNetwork/qhostaddress.h>
 
 #include "../../../job/Modus/global/signal/sv_signal.h"
-#include "../../../job/Modus_Libs/APAK/storages/zn_k1/src/zn_global.h"
+#include "../../../job/APAK/store/zn_k1/src/zn_global.h"
 #include "../../../job/svlib/SvAbstractLogger/svabstractlogger.h"
 
 // имена параметров (отсутствующие в global_defs.h)

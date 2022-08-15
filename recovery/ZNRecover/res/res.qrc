@@ -1,0 +1,18 @@
+<RCC>
+  <qresource prefix="main">
+    <file>add.ico</file>
+    <file>arrow_blue.ico</file>
+    <file>arrow_orange.ico</file>
+    <file>arrow_up_green.ico</file>
+    <file>bag.ico</file>
+    <file>check_blue.ico</file>
+    <file>check.ico</file>
+    <file>cross.ico</file>
+    <file>document.ico</file>
+    <file>edit.ico</file>
+    <file>light.ico</file>
+    <file>pause.ico</file>
+    <file>play.ico</file>
+    <file>synchronize.ico</file>
+  </qresource>
+</RCC>

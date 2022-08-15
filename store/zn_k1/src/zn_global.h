@@ -9,11 +9,11 @@
 #include <QJsonArray>
 #include <QDir>
 
-#include "../../../svlib/SvCRC/1.1/sv_crc.h"
-#include "../../../svlib/SvException/svexception.h"
-#include "../../../Modus/global/global_defs.h"
-#include "../../../Modus/global/signal/sv_signal.h"
-#include "../../../svlib/SvAbstractLogger/svabstractlogger.h"
+#include "../../../../svlib/SvCRC/1.1/sv_crc.h"
+#include "../../../../svlib/SvException/svexception.h"
+#include "../../../../Modus/global/global_defs.h"
+#include "../../../../Modus/global/signal/sv_signal.h"
+#include "../../../../svlib/SvAbstractLogger/svabstractlogger.h"
 
 #define P_HOST                    "host"
 #define P_ZONE                    "zone"
