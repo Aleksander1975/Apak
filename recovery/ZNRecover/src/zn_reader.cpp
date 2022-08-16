@@ -67,6 +67,34 @@ void zn1::ZNReader::conmessage(const QString msg, int level, int type)
 
 void zn1::ZNReader::run()
 {
+  m_is_running = true;
+
+  int readed_buff  = 0;
+  int readed_total = 0;
+  int cnt = 0;
+
+while(m_is_running) {
+
+    readed_buff = cnt++ * 0x100000;
+    readed_total += readed_buff;
+
+    emit message(QString("Запрос на чтение %1 мегабайт.")
+                 .arg(m_config.readerParams.buff_size_mb), sv::log::llDebug, sv::log::mtDebug);
+
+
+    emit total(int(double(readed_total) / 0x100000)); // пересчет в мегабайты
+//    emit parted(int(double(readed_buff ) / 0x100000));
+    emit loaded(QString("Загружено сегментов: %1, текущий сегмент: %2 Мб, всего: %3 Мб")
+                .arg(cnt).arg(int(double(readed_buff ) / 0x100000)).arg(int(double(readed_total) / 0x100000)));
+
+    if (cnt==16) cnt = 0;
+
+    msleep(1000);
+    qDebug() << 4 * cnt;
+  }
+
+/*
+
   auto connect2zn = [=](zn1::ZNReader::ZNstate& state, QString& error)  -> bool
   { //! 1. физическое подключение к хосту
 
@@ -308,6 +336,7 @@ void zn1::ZNReader::run()
     file.close();
 
   exit();
+  */
 }
 
 void zn1::ZNReader::stop()

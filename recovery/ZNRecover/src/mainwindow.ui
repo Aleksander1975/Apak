@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>618</width>
-    <height>616</height>
+    <width>613</width>
+    <height>573</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -34,7 +34,7 @@
       </property>
       <widget class="QStackedWidget" name="stackedWidget">
        <property name="currentIndex">
-        <number>1</number>
+        <number>2</number>
        </property>
        <widget class="QWidget" name="page_1">
         <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -719,94 +719,24 @@
               </widget>
              </widget>
             </item>
-            <item>
-             <spacer name="verticalSpacer_2">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
            </layout>
           </widget>
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_11">
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout_10">
-             <item>
-              <widget class="QProgressBar" name="progressBarPart">
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16</height>
-                </size>
-               </property>
-               <property name="value">
-                <number>0</number>
-               </property>
-               <property name="format">
-                <string>Буфер %p%</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QProgressBar" name="progressBar">
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16</height>
-                </size>
-               </property>
-               <property name="value">
-                <number>0</number>
-               </property>
-               <property name="format">
-                <string>Общий %p%</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QVBoxLayout" name="verticalLayout_13">
-             <item>
-              <widget class="QLabel" name="lblPartSize">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>0</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="lblTotalSize">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>0</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <widget class="QPushButton" name="bnStart">
-             <property name="text">
-              <string>Загрузить</string>
+            <widget class="QProgressBar" name="progressBar">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16</height>
+              </size>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="format">
+              <string>Загрузка данных %p%</string>
              </property>
             </widget>
            </item>
@@ -814,18 +744,6 @@
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_8">
-           <property name="leftMargin">
-            <number>4</number>
-           </property>
-           <property name="topMargin">
-            <number>4</number>
-           </property>
-           <property name="rightMargin">
-            <number>4</number>
-           </property>
-           <property name="bottomMargin">
-            <number>4</number>
-           </property>
            <item>
             <widget class="QPushButton" name="bnBackToBegin1">
              <property name="font">
@@ -851,6 +769,13 @@
               </size>
              </property>
             </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="bnStart">
+             <property name="text">
+              <string>Загрузить</string>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QPushButton" name="bnToStep3">
@@ -1038,7 +963,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QTreeView" name="treeViewSignals">
+             <widget class="QTreeView" name="treeViewFilters">
               <property name="font">
                <font>
                 <weight>50</weight>
@@ -1122,7 +1047,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>618</width>
+     <width>613</width>
      <height>22</height>
     </rect>
    </property>

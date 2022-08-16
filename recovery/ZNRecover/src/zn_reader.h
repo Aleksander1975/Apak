@@ -95,6 +95,7 @@ namespace zn1 {
     void message(const QString msg, int level = sv::log::llDebug, int type  = sv::log::mtDebug);
     void total(int size);
     void parted(int size);
+    void loaded(const QString& desc);
     void zonesize(int size);
     void partsize(int size);
 //    void finished();

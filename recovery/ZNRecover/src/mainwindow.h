@@ -11,11 +11,20 @@
 
 #include "zn_select_dialog.h"
 #include "zn_reader.h"
+#include "task_editor.h"
+#include "treemodel.h"
+#include "treeitem.h"
+
 #include "../../../../../job/svlib/SvWidgetLogger/1.1/sv_widget_logger.h"
 
 namespace Ui {
   class MainWindow;
 }
+
+enum LoadState {
+  Stopped,
+  Started
+};
 
 class Interval
 {
@@ -59,15 +68,24 @@ private:
   bool loadConfig(QString& error);
   bool saveConfig(QString& error);
 
+  bool makeTree();
+
   QLabel *lblStatus1 = nullptr;
   QLabel *lblStatus2 = nullptr;
 
+  LoadState l_state = Stopped;
+
+  QMap<qint64, zn1::Task>             m_tasks;
+
+  TreeModel* _model = nullptr;
+
 private slots:
   void message(const QString msg, int level = sv::log::llDebug, int type  = sv::log::mtDebug);
-  void setProgressZoneSize(int size);
-  void setCurrentProgress(int size);
+//  void setProgressZoneSize(int size);
+//  void setCurrentProgress(int size);
+  void setStatusBarText(const QString& text);
 
-  void on_bnStart_clicked();
+  void start();
 
   void on_bnSelectFile_clicked();
 
@@ -84,8 +102,14 @@ private slots:
 
   void backToBegin();
 
+  void on_bnAddTask_clicked();
+
+  void on_bnEditTask_clicked();
+
+  void on_bnRemoveTask_clicked();
+
   signals:
-  void stop();
+    void stop();
 
 
 };

@@ -20,7 +20,11 @@ SOURCES += main.cpp\
     ../../../../../job/svlib/SvWidgetLogger/1.1/sv_widget_logger.cpp \
     ../../../../../job/svlib/Network/Tcp/Client/1.0/sv_tcp_client.cpp \
     zn_select_dialog.cpp \
-    ../../../../../job/Modus/global/signal/sv_signal.cpp
+    ../../../../../job/Modus/global/signal/sv_signal.cpp \
+    task_editor.cpp \
+    zn_picker.cpp \
+    treemodel.cpp \
+    treeitem.cpp
 
 HEADERS  += mainwindow.h \
     zn_reader.h \
@@ -30,7 +34,11 @@ HEADERS  += mainwindow.h \
     ../../../../../job/Modus_Libs/APAK/storages/zn_k1/src/zn_global.h \
     zn_select_dialog.h \
     ../../recovery_defs.h \
-    ../../../../../job/Modus/global/signal/sv_signal.h
+    ../../../../../job/Modus/global/signal/sv_signal.h \
+    task_editor.h \
+    zn_picker.h \
+    treemodel.h \
+    treeitem.h
 
 FORMS    += mainwindow.ui \
     select_zn_dialog.ui

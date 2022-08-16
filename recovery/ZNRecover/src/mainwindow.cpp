@@ -10,6 +10,8 @@ MainWindow::MainWindow(QWidget *parent) :
   connect(ui->bnBackToBegin1, &QPushButton::clicked, this, &MainWindow::backToBegin);
   connect(ui->bnBackToBegin2, &QPushButton::clicked, this, &MainWindow::backToBegin);
 
+  connect(ui->bnStart, &QPushButton::clicked, this, &MainWindow::start);
+
 //  ui->comboReadType->clear();
 //  ui->comboReadType->addItem("Все", QVariant("all"));
 //  ui->comboReadType->addItem("Выбранные задачи", QVariant("tasks"));
@@ -46,14 +48,18 @@ MainWindow::MainWindow(QWidget *parent) :
 
   ui->textLog->document()->setMaximumBlockCount(2000);
 
-  QLabel *lblStatus1 = new QLabel(this);
+  QLabel *lblStatus1 = new QLabel(statusBar());
   QLabel *lblStatus2 = new QLabel(this);
 
-  this->statusBar()->insertWidget(0, lblStatus1);
-  this->statusBar()->insertWidget(1, lblStatus2);
+  this->statusBar()->addPermanentWidget(lblStatus1);
+  qDebug() << lblStatus1->parent()->objectName();
 
-  lblStatus1->setText(QString("Сегмент: %1").arg(11));
-  lblStatus2->setText(QString("Общий: %1").arg(222));
+  this->statusBar()->addWidget(lblStatus2);
+
+//  ui->progressBar->setVisible(false);
+
+//  lblStatus1->setText(QString("Сегмент: %1").arg(11));
+//  lblStatus2->setText(QString("Общий: %1").arg(222));
 
 }
 
@@ -179,62 +185,72 @@ MainWindow::~MainWindow()
     ui->spinZNZoneSize->setEnabled(checked && !ui->checkRequestZoneSize->isChecked());
 }*/
 
-void MainWindow::on_bnStart_clicked()
+void MainWindow::start()
 {
-  ui->progressBar->setValue(0);
+  if(l_state == Started) {
 
-  if(ui->lineSaveFilePath->text().isEmpty()) {
+    emit stop();
 
-    QMessageBox::critical(this, "Ошибка", "Укажите файл, в который будут сохраняться данные");
-    return;
   }
+  else if (l_state == Stopped) {
 
-  // формируем и сохраняем json файл конфигурации
-  QString error;
-  if(!saveConfig(error)) {
+    ui->progressBar->setValue(0);
 
-    QMessageBox::critical(this, "Ошибка", error);
-    return;
+    if(ui->lineSaveFilePath->text().isEmpty()) {
+
+      QMessageBox::critical(this, "Ошибка", "Укажите файл, в который будут сохраняться данные");
+      return;
+    }
+
+    // формируем и сохраняем json файл конфигурации
+    QString error;
+    if(!saveConfig(error)) {
+
+      QMessageBox::critical(this, "Ошибка", error);
+      return;
+    }
+
+    bool ok;
+    QString pass = QInputDialog::getText(this, tr("Авторизация для чтения данных"),
+                                         tr("Введите пароль:"), QLineEdit::Normal,
+                                         "QWERTY", &ok);
+    if (!ok || pass.isEmpty()) {
+
+      QMessageBox::critical(this, "Ошибка", "Не указан пароль. Продолжение операции невозможно.");
+      return;
+    }
+
+    //! создаем объект-читатель
+    m_reader = new zn1::ZNReader();
+
+    if(!m_reader->configure(m_config, pass)) {
+
+      QMessageBox::critical(this, "Ошибка", m_reader->lastError());
+      return;
+    }
+
+    connect(m_reader, &zn1::ZNReader::started,  this,             &MainWindow::setButtonsStateStarted);
+    connect(m_reader, &zn1::ZNReader::finished, this,             &MainWindow::setButtonsStateStopped);
+    connect(m_reader, &zn1::ZNReader::message,  this,             &MainWindow::message);
+
+    connect(this,     &MainWindow::stop,        m_reader,         &zn1::ZNReader::stop);
+  //  connect(m_reader, &zn1::ZNReader::finished, m_reader,         &zn1::ZNReader::quit);
+
+    connect(m_reader, &zn1::ZNReader::finished, m_reader,         &zn1::ZNReader::deleteLater);
+
+    connect(m_reader, &zn1::ZNReader::zonesize, ui->progressBar,  &QProgressBar::setMaximum);
+    connect(m_reader, &zn1::ZNReader::total,   ui->progressBar,   &QProgressBar::setValue);
+
+  //  connect(m_reader, &zn1::ZNReader::partsize, ui->progressBarPart, &QProgressBar::setMaximum);
+  //  connect(m_reader, &zn1::ZNReader::parted,   ui->progressBarPart, &QProgressBar::setValue);
+
+//    connect(m_reader, &zn1::ZNReader::total, this, &MainWindow::setProgressZoneSize);
+//    connect(m_reader, &zn1::ZNReader::parted, this, &MainWindow::setCurrentProgress);
+    connect(m_reader, &zn1::ZNReader::loaded, this, &MainWindow::setStatusBarText);
+
+    m_reader->start();
+
   }
-
-  bool ok;
-  QString pass = QInputDialog::getText(this, tr("Авторизация для чтения данных"),
-                                       tr("Введите пароль:"), QLineEdit::Normal,
-                                       "QWERTY", &ok);
-  if (!ok || pass.isEmpty()) {
-
-    QMessageBox::critical(this, "Ошибка", "Не указан пароль. Продолжение операции невозможно.");
-    return;
-  }
-
-  //! создаем объект-читатель
-  m_reader = new zn1::ZNReader();
-
-  if(!m_reader->configure(m_config, pass)) {
-
-    QMessageBox::critical(this, "Ошибка", m_reader->lastError());
-    return;
-  }
-
-  connect(m_reader, &zn1::ZNReader::started,  this,             &MainWindow::setButtonsStateStarted);
-  connect(m_reader, &zn1::ZNReader::finished, this,             &MainWindow::setButtonsStateStopped);
-  connect(m_reader, &zn1::ZNReader::message,  this,             &MainWindow::message);
-
-  connect(this,     &MainWindow::stop,        m_reader,         &zn1::ZNReader::stop);
-//  connect(m_reader, &zn1::ZNReader::finished, m_reader,         &zn1::ZNReader::quit);
-
-  connect(m_reader, &zn1::ZNReader::finished, m_reader,         &zn1::ZNReader::deleteLater);
-
-  connect(m_reader, &zn1::ZNReader::zonesize, ui->progressBar,     &QProgressBar::setMaximum);
-  connect(m_reader, &zn1::ZNReader::total,   ui->progressBar,     &QProgressBar::setValue);
-  connect(m_reader, &zn1::ZNReader::partsize, ui->progressBarPart, &QProgressBar::setMaximum);
-  connect(m_reader, &zn1::ZNReader::parted,   ui->progressBarPart, &QProgressBar::setValue);
-
-  connect(m_reader, &zn1::ZNReader::total, this, &MainWindow::setProgressZoneSize);
-  connect(m_reader, &zn1::ZNReader::parted, this, &MainWindow::setCurrentProgress);
-
-  m_reader->start();
-
 }
 
 void MainWindow::setButtonsStateStarted()
@@ -243,11 +259,13 @@ void MainWindow::setButtonsStateStarted()
   ui->bnBackToBegin1->setEnabled(false);
   ui->bnToStep3->setEnabled(false);
 
+  ui->progressBar->setVisible(true);
+
   ui->bnStart->setText("Отмена");
 
-  connect(ui->bnStart, &QPushButton::pressed, this, &MainWindow::stop);
+  l_state = Started;
 
-  qApp->processEvents();
+//  qApp->processEvents();
 }
 
 void MainWindow::setButtonsStateStopped()
@@ -256,24 +274,36 @@ void MainWindow::setButtonsStateStopped()
   ui->bnBackToBegin1->setEnabled(true);
   ui->bnToStep3->setEnabled(true);
 
+  ui->progressBar->setVisible(false);
+
   ui->bnStart->setText("Загрузить");
 
-  connect(ui->bnStart, &QPushButton::clicked, this, &MainWindow::on_bnStart_clicked);
+  l_state = Stopped;
 
-  qApp->processEvents();
+//  qApp->processEvents();
 }
 
-void MainWindow::setProgressZoneSize(int size)
+/*void MainWindow::setProgressZoneSize(int size)
 {
-  lblStatus1->setText(QString("Сегмент: %1").arg(size));
-  qApp->processEvents();
+//  qDebug() << 10 << size;
+//  statusTip().
+//  reinterpret_cast<QLabel*>(statusBar()->children().at(0))->setText(QString("Общий: %1 Мб").arg(size));
+//  lblStatus1->setText("dsdsd"); // QString("Общий: %1 Мб").arg(size));
+  qDebug() << 11;
+//  qApp->processEvents();
+}*/
+
+void MainWindow::setStatusBarText(const QString& text)
+{
+  statusBar()->showMessage(text);
 }
 
-void MainWindow::setCurrentProgress(int size)
+/*void MainWindow::setCurrentProgress(int size)
 {
-  lblStatus2->setText(QString("Общий: %1").arg(size));
-  qApp->processEvents();
-}
+  ui->label_5->setText(QString("Сегмент: %1 Мб").arg(size));
+  qDebug() << 12;
+//  qApp->processEvents();
+}*/
 
 void MainWindow::on_bnSelectFile_clicked()
 {
@@ -334,4 +364,296 @@ void MainWindow::on_bnToNextStep_clicked()
 void MainWindow::backToBegin()
 {
   ui->stackedWidget->setCurrentIndex(0);
+}
+
+void MainWindow::on_bnAddTask_clicked()
+{
+  TaskEditor* te = new TaskEditor(this);
+
+  switch (te->exec()) {
+
+    case TaskEditor::Accepted:
+    {
+      QString error = QString();
+      if(!addTask(te->task(), error))
+        QMessageBox::critical(this, "Ошибка", error);
+
+    }
+    break;
+
+    case TaskEditor::Error:
+
+      QMessageBox::critical(this, "Ошибка", te->lastError());
+      break;
+
+    default:
+      break;
+  }
+
+  delete te;
+}
+
+void MainWindow::on_bnEditTask_clicked()
+{
+  TaskEditor* te = nullptr;
+
+  try {
+  //  qDebug() << "curr row" <<  ui->tableWidget->currentRow();
+    if(ui->tableWidget->currentRow() < 0)
+      throw SvException("No rows. Nothing to edit");
+
+    int current_row = ui->tableWidget->currentRow();
+
+    bool ok;
+    qint64 current_task_id = ui->tableWidget->item(ui->tableWidget->currentItem()->row(), 0)->data(Qt::UserRole).toLongLong(&ok);
+    if(!ok)
+      throw SvException("Error on trying to determine task id from item data.");
+
+    if(!m_tasks.contains(current_task_id))
+      throw SvException("current task_id not found. on_bnEditTask_clicked");
+
+    zn1::Task& current_task = m_tasks[current_task_id];
+
+    te = new TaskEditor(this, &current_task);
+
+    switch (te->exec()) {
+
+      case TaskEditor::Accepted:
+      {
+        foreach (auto task, m_tasks.values()) {
+
+          if(task.id() == current_task_id)
+            continue;
+
+          if(te->task()->save_path() == task.save_path())
+            throw SvException(QString("Такой путь для извлечения данных уже задан. Недопустимо указывать один путь для разных задач."));
+
+        }
+
+        ui->tableWidget->item(current_row, 0)->setText(te->task()->marker());
+        ui->tableWidget->item(current_row, 1)->setText(te->task()->begin().toString("dd.MM.yyyy hh:mm:ss"));
+        ui->tableWidget->item(current_row, 2)->setText(te->task()->end().toString("dd.MM.yyyy hh:mm:ss"));
+        ui->tableWidget->item(current_row, 3)->setText(te->task()->save_path());
+
+        current_task.setData(te->task()->marker(), te->task()->period(), te->task()->path(), te->task()->file_name());
+
+      }
+        break;
+
+      case TaskEditor::Error:
+
+        QMessageBox::critical(this, "Ошибка", te->lastError());
+        break;
+
+      default:
+        break;
+    }
+
+    delete te;
+
+
+  }
+  catch(SvException& e) {
+
+    QMessageBox::critical(this, "Error", e.error);
+
+    if(te)
+      delete te;
+
+  }
+}
+
+void MainWindow::on_bnRemoveTask_clicked()
+{
+  if(ui->tableWidget->currentRow() < 0)
+    return;
+
+  int current_row = ui->tableWidget->currentRow();
+
+  bool ok;
+  qint64 current_task_id = ui->tableWidget->item(ui->tableWidget->currentItem()->row(), 0)->data(Qt::UserRole).toLongLong(&ok);
+  if(!ok)
+    throw SvException("Error on trying to determine task id from item data.");
+
+  if(!m_tasks.contains(current_task_id))
+    throw SvException("current task_id not found. on_bnRemoveTask_clicked");
+
+  m_tasks.remove(current_task_id);
+
+
+  for (auto w: m_widget_items[current_task_id])
+    delete w;
+
+  m_widget_items[current_task_id].clear();
+  m_widget_items.remove(current_task_id);
+
+  ui->tableWidget->removeRow(current_row);
+
+}
+
+bool MainWindow::makeTree()
+{
+
+  QSqlError serr;
+  QSqlQuery* q = new QSqlQuery(PGDB->db);
+  int column_count = _model->rootItem()->columnCount();
+
+  try {
+
+    _model->clear();
+
+    /** группа Конфигурация пульта **/
+    _standRoot = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
+    _standRoot->parent_index = _model->rootItem()->index;
+    _standRoot->is_main_row = true;
+    _standRoot->item_type = itStandRoot;
+    _standRoot->setData(1, "Конфигурация пульта");
+//    _standRoot->setData(0, QString(" "));
+    for(int i = 0; i < column_count; i++) _standRoot->setInfo(i, ItemInfo());
+    _standRoot->setInfo(0, ItemInfo(itStandRootIcon, ""));
+
+
+    // добавляем разделы Общие сведения, Параметры запуска, Конфигурация КСУТС сервера, Логгер КСУТС сервера
+//    _general_info = _standRoot->insertChildren(_standRoot->childCount(), 1, column_count);
+//    _general_info->parent_index = _standRoot->index;
+//    _general_info->is_main_row = true;
+//    _general_info->item_type = itStandInfo;
+//    _general_info->setData(1, "Общие сведения");
+
+    _autostart = _standRoot->insertChildren(_standRoot->childCount(), 1, column_count);
+    _autostart->parent_index = _standRoot->index;
+    _autostart->is_main_row = true;
+    _autostart->item_type = itAutostart;
+    _autostart->setData(1, "Параметры автозапуска");
+
+    _ksuts_config = _standRoot->insertChildren(_standRoot->childCount(), 1, column_count);
+    _ksuts_config->parent_index = _standRoot->index;
+    _ksuts_config->is_main_row = true;
+    _ksuts_config->item_type = itConfig;
+    _ksuts_config->setData(1, "Конфигурация КСУТС сервера");
+
+    _ksuts_logger = _standRoot->insertChildren(_standRoot->childCount(), 1, column_count);
+    _ksuts_logger->parent_index = _standRoot->index;
+    _ksuts_logger->is_main_row = true;
+    _ksuts_logger->item_type = itLogger;
+    _ksuts_logger->setData(1, "Логи КСУТС сервера");
+
+    /** разделитель 1 **/
+    TreeItem* div1 = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
+    div1->parent_index = _model->rootItem()->index;
+    div1->item_type = itUndefined;
+    div1->setData(1, QString(100, ' '));
+
+
+    /**      группа "Устройства"      */
+    _devicesRoot = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
+    _devicesRoot->parent_index = _model->rootItem()->index;
+    _devicesRoot->is_main_row = true;
+    _devicesRoot->item_type = itDevicesRoot;
+    for(int i = 0; i < column_count; i++) _devicesRoot->setInfo(i, ItemInfo());
+    _devicesRoot->setInfo(0, ItemInfo(itDevicesRootIcon, ""));
+//    _devicesRoot->setData(0, QString(" "));
+    // определяем общее кол-во и кол-во привязанных устройств для этой стойки
+    serr = PGDB->execSQL(QString(SQL_SELECT_DEVICES_COUNT_STR), q);
+    if(serr.type() != QSqlError::NoError) _exception.raise(serr.text());
+    q->first();
+
+    _devicesRoot->setData(1, QString("Устройства %1").arg(q->value(0).toString()));
+
+    q->finish();
+
+    // заполняем список устройств
+    pourDevicesToRoot(_devicesRoot);
+
+    // заполняем список сигналов
+    pourSignalsToDevices(_devicesRoot);
+
+    /** разделитель 2 **/
+    TreeItem* div2 = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
+    div2->parent_index = _model->rootItem()->index;
+    div2->item_type = itUndefined;
+    div2->setData(1, QString(100, ' '));
+
+
+    /**    группа "Хранилища"       **/
+    _storagesRoot = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
+    _storagesRoot->parent_index = _model->rootItem()->index;
+    _storagesRoot->is_main_row = true;
+    _storagesRoot->item_type = itStoragesRoot;
+    _storagesRoot->setData(1, QString("Хранилища"));
+//    _storagesRoot->setData(0, QString(" "));
+    for(int i = 0; i < column_count; i++) _storagesRoot->setInfo(i, ItemInfo());
+    _storagesRoot->setInfo(0, ItemInfo(itStoragesRootIcon, ""));
+
+
+    // читаем все! хранилища
+    pourStoragesToRoot(_storagesRoot);
+
+    // заполняем список устройств
+    pourDevicesToStorages(_storagesRoot);
+
+    // сигналы
+    pourSignalsToStorages(_storagesRoot);
+
+
+    delete q;
+
+    ui->treeView->expandToDepth(0);
+
+    return true;
+
+  }
+
+  catch(SvException& e) {
+
+    q->finish();
+    delete q;
+
+    mainlog << sv::log::Time << sv::log::mtCritical << e.error << sv::log::endl;
+
+    return false;
+
+  }
+
+}
+
+bool MainWindow::addTask(zn1::Task* newtask, QString& error)
+{
+  for(auto& task: m_tasks) {
+
+    if(task.save_path() == newtask->save_path()) {
+
+      error = QString("Невозможно добавить задачу. Указанный путь для сохранения уже задан");
+      return false;
+    }
+  }
+
+
+
+//  ui->treeViewFilters->
+
+  ui->tableWidget->insertRow(ui->tableWidget->rowCount());
+  int row = ui->tableWidget->rowCount() - 1;
+
+  m_widget_items.insert(newtask->id(), QList<QTableWidgetItem*>());
+
+//  m_widget_items[row].append(new QTableWidgetItem(newtask->id()));
+//  ui->tableWidget->setItem(row, 0, m_widget_items[row].last());
+
+  m_widget_items[newtask->id()].append(new QTableWidgetItem(newtask->marker()));
+  ui->tableWidget->setItem(row, 0, m_widget_items[newtask->id()].last());
+  m_widget_items[newtask->id()].last()->setData(Qt::UserRole, newtask->id());
+
+  m_widget_items[newtask->id()].append(new QTableWidgetItem(newtask->begin().toString("dd.MM.yyyy hh:mm:ss")));
+  ui->tableWidget->setItem(row, 1, m_widget_items[newtask->id()].last());
+
+  m_widget_items[newtask->id()].append(new QTableWidgetItem(newtask->end().toString("dd.MM.yyyy hh:mm:ss")));
+  ui->tableWidget->setItem(row, 2, m_widget_items[newtask->id()].last());
+
+  m_widget_items[newtask->id()].append(new QTableWidgetItem(newtask->save_path()));
+  ui->tableWidget->setItem(row, 3, m_widget_items[newtask->id()].last());
+
+  m_tasks.insert(newtask->id(), zn1::Task(newtask));
+
+  return true;
 }
