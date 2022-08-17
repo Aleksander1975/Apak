@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
   ui->lineOpenFilePath->setText(m_config.zn_data_file);
 
-  for(zn1::Task task: m_config.pickerParams.tasks) {
+  for(zn1::Filter task: m_config.pickerParams.filters) {
 
     if(!addTask(&task, error))
       QMessageBox::critical(this, "Ошибка", error);
@@ -105,11 +105,11 @@ bool MainWindow::saveConfig(QString& error)
   // формируем и сохраняем json файл конфигурации
   m_config.zn_data_file = ui->lineOpenFilePath->text();
 
-  m_config.pickerParams.tasks.clear();
+  m_config.pickerParams.filters.clear();
 
   for(auto task: m_tasks) {
 
-    m_config.pickerParams.tasks.append(task);
+    m_config.pickerParams.filters.append(task);
   }
 
   QFile json_file(m_config_file_name);
@@ -139,7 +139,7 @@ bool MainWindow::saveConfig(QString& error)
   return true;
 }
 
-bool MainWindow::addTask(zn1::Task* newtask, QString& error)
+bool MainWindow::addTask(zn1::Filter* newtask, QString& error)
 {
   for(auto& task: m_tasks) {
 
@@ -171,7 +171,7 @@ bool MainWindow::addTask(zn1::Task* newtask, QString& error)
   m_widget_items[newtask->id()].append(new QTableWidgetItem(newtask->save_path()));
   ui->tableWidget->setItem(row, 3, m_widget_items[newtask->id()].last());
 
-  m_tasks.insert(newtask->id(), zn1::Task(newtask));
+  m_tasks.insert(newtask->id(), zn1::Filter(newtask));
 
   return true;
 }
@@ -223,7 +223,7 @@ void MainWindow::on_bnEditTask_clicked()
     if(!m_tasks.contains(current_task_id))
       throw SvException("current task_id not found. on_bnEditTask_clicked");
 
-    zn1::Task& current_task = m_tasks[current_task_id];
+    zn1::Filter& current_task = m_tasks[current_task_id];
 
     te = new TaskEditor(this, &current_task);
 

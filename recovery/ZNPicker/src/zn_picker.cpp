@@ -148,7 +148,7 @@ void zn1::ZNPicker::run()
         }
 
         // ищем, есть ли задача, которая соответствует прочитанным данным
-        for(zn1::Task& task: m_config.pickerParams.tasks) {
+        for(zn1::Filter& task: m_config.pickerParams.filters) {
 
           if(task.period().contains(r.dateTime()) && task.marker_hash() == r.marker_hash()) {
 

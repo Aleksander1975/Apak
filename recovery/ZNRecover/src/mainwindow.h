@@ -8,6 +8,8 @@
 #include <QFileDialog>
 #include <QThread>
 #include <QInputDialog>
+#include <QSqlDatabase>
+#include <QSqlQuery>
 
 #include "zn_select_dialog.h"
 #include "zn_reader.h"
@@ -62,11 +64,14 @@ private:
 //  QThread*              m_thread = nullptr;
   sv::SvWidgetLogger*   m_logger = nullptr;
 
-  zn1::RecoveryConfig m_config;
+  zn1::RecoveryConfig   m_config;
   QString               m_config_file_name;
+
+  QSqlDatabase m_db;
 
   bool loadConfig(QString& error);
   bool saveConfig(QString& error);
+  bool createDb(QString& error);
 
   bool makeTree();
 
@@ -75,9 +80,11 @@ private:
 
   LoadState l_state = Stopped;
 
-  QMap<qint64, zn1::Task>             m_tasks;
+  QMap<qint64, zn1::Filter>             m_tasks;
 
   TreeModel* _model = nullptr;
+
+
 
 private slots:
   void message(const QString msg, int level = sv::log::llDebug, int type  = sv::log::mtDebug);

@@ -51,7 +51,7 @@
 #include <QPixmap>
 
 //#include "../../svlib/sv_sqlite.h"
-#include "../global/sql_defs.h"
+//#include "../global/sql_defs.h"
 #include "treeitem.h"
 
 class TreeItem;

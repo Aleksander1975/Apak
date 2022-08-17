@@ -19,6 +19,7 @@
 #define P_SYSTEMS                 "systems"
 #define P_ZN_DATA_FILE            "zn_data_file"
 #define P_TASKS                   "tasks"
+#define P_FILTERS                 "filters"
 #define P_MARKER                  "marker"
 #define P_BEGIN                   "begin"
 #define P_END                     "end"
@@ -61,15 +62,15 @@ namespace zn1 {
 
   /*! структуры для описания и хранения задач для извлечения
    * необходимых данных из общего массива данных */
-  class TaskPeriod
+  class FilterPeriod
   {
   public:
-    explicit TaskPeriod():
+    explicit FilterPeriod():
       m_begin(QDateTime::currentDateTime()),
       m_end(QDateTime::currentDateTime())
     {  }
 
-    explicit TaskPeriod(QDateTime begin, QDateTime end):
+    explicit FilterPeriod(QDateTime begin, QDateTime end):
       m_begin(begin),
       m_end(end)
     {
@@ -100,7 +101,7 @@ namespace zn1 {
     bool contains(QDateTime point) { return ((point >= m_begin) && (point <= m_end)); }
     bool contains(qint64 point) const { return ((point >= m_begin.toMSecsSinceEpoch()) && (point <= m_end.toMSecsSinceEpoch())); }
 
-    bool operator==(const TaskPeriod& other) { return (other.m_begin == m_begin) && (other.m_end == m_end); }
+    bool operator==(const FilterPeriod& other) { return (other.m_begin == m_begin) && (other.m_end == m_end); }
 
   private:
     QDateTime m_begin;
@@ -108,32 +109,32 @@ namespace zn1 {
 
   };
 
-  class Task {
+  class Filter {
 
   public:
-    Task():
+    Filter():
       m_id(0),
       m_marker(QString()),
       m_begin(QDateTime::currentDateTime()),
       m_end(QDateTime::currentDateTime()),
-      m_path(QString()),
-      m_file_name(QString())
+      m_signal(QString())
+//      m_file_name(QString())
     {
       m_period.setData(m_begin, m_end);
     }
 
-    Task(Task* task):
-      m_id(task->id()),
-      m_marker(task->marker()),
-      m_begin(task->begin()),
-      m_end(task->end()),
-      m_path(task->path()),
-      m_file_name(task->file_name())
+    Filter(Filter* filter):
+      m_id(filter->id()),
+      m_marker(filter->marker()),
+      m_begin(filter->begin()),
+      m_end(filter->end()),
+      m_signal(filter->signal())
+//      m_file_name(filter->file_name())
     {
       m_period.setData(m_begin, m_end);
     }
 
-    Task& operator=(const Task& other)
+    Filter& operator=(const Filter& other)
     {
       if(this == &other)
         return *this;
@@ -142,8 +143,8 @@ namespace zn1 {
       m_marker = other.m_marker;
       m_begin = other.m_begin;
       m_end = other.m_end;
-      m_path = other.m_path;
-      m_file_name = other.m_file_name;
+      m_signal = other.m_signal;
+//      m_file_name = other.m_file_name;
       m_period.setData(m_begin, m_end);
 
       return *this;
@@ -153,17 +154,17 @@ namespace zn1 {
     uint        marker_hash()             { return qHash(m_marker); }
 
     const QString     marker()      const { return m_marker;        }
-    const QString     path()        const { return m_path;          }
-    const QString     file_name()   const { return m_file_name;     }
+    const QString     signal()      const { return m_signal;        }
+//    const QString     file_name()   const { return m_file_name;     }
     const QDateTime   begin()       const { return m_begin;         }
     const QDateTime   end()         const { return m_end;           }
 
-    const TaskPeriod& period()      const { return m_period;        }
+    const FilterPeriod& period()      const { return m_period;        }
 
     QString   save_path()
     {
-      QString path      = m_path;
-      QString file_name = m_file_name;
+      QString path      = "./data";
+      QString file_name = DEFAULT_FILE_NAME_TEMPLATE;
 
       return QDir(path.replace(DEFAULT_MARKER_TEMPLATE,  m_marker, Qt::CaseInsensitive)).filePath(file_name
                                                                   .replace(DEFAULT_MARKER_TEMPLATE, m_marker, Qt::CaseInsensitive)
@@ -180,23 +181,23 @@ namespace zn1 {
     void setBegin(QDateTime begin)
     {
       m_begin   = begin;
-      m_period  = TaskPeriod(m_begin, m_end);
+      m_period  = FilterPeriod(m_begin, m_end);
     }
 
     void setEnd(QDateTime end)
     {
       m_end     = end;
-      m_period  = TaskPeriod(m_begin, m_end);
+      m_period  = FilterPeriod(m_begin, m_end);
     }
 
     void setPeriod(QDateTime begin, QDateTime end)
     {
       m_begin   = begin;
       m_end     = end;
-      m_period  = TaskPeriod(m_begin, m_end);
+      m_period  = FilterPeriod(m_begin, m_end);
     }
 
-    void setPeriod(TaskPeriod period)
+    void setPeriod(FilterPeriod period)
     {
       setPeriod(period.begin(), period.end());
     }
@@ -206,28 +207,27 @@ namespace zn1 {
       m_marker    = marker;
     }
 
-    void setPath(const QString& path)
+    void setSignal(const QString& signal)
     {
-      m_path    = path;
+      m_signal    = signal;
     }
 
-    void setFileName(const QString& file_name)
+//    void setFileName(const QString& file_name)
+//    {
+//      m_file_name = file_name;
+//    }
+
+    void setData(const QString& marker, FilterPeriod period, const QString& signal)
     {
-      m_file_name = file_name;
+      setData(marker, period.begin(), period.end(), signal);
     }
 
-    void setData(const QString& marker, TaskPeriod period, const QString& path, const QString& file_name)
-    {
-      setData(marker, period.begin(), period.end(), path, file_name);
-    }
-
-    void setData(const QString& marker, QDateTime begin, QDateTime end, const QString& path, const QString& file_name)
+    void setData(const QString& marker, QDateTime begin, QDateTime end, const QString& signal)
     {
       setPeriod(begin, end);
 
       m_marker    = marker;
-      m_path      = path;
-      m_file_name = file_name;
+      m_signal    = signal;
     }
 
   private:
@@ -236,9 +236,9 @@ namespace zn1 {
     QString     m_marker;
     QDateTime   m_begin;
     QDateTime   m_end;
-    QString     m_path;
-    QString     m_file_name;
-    TaskPeriod  m_period;
+    QString     m_signal;
+//    QString     m_file_name;
+    FilterPeriod  m_period;
 
   };
 
@@ -442,7 +442,7 @@ namespace zn1 {
 
     qint64          start_byte      = 0;
 
-    QList<Task>  tasks     = QList<Task>();
+    QList<Filter>  filters     = QList<Filter>();
 
     static PickerParams fromJsonString(const QString& json_string) //throw (SvException)
     {
@@ -481,14 +481,14 @@ namespace zn1 {
       else
         p.start_byte = 0;
 
-      if(object.contains(P_TASKS)) {
+      if(object.contains(P_FILTERS)) {
 
-        if(!object.value(P_TASKS).isArray())
-          throw SvException(QString("Неверная конфигурация json. Раздел \"%1\" отсутствует или не является массивом").arg(P_TASKS));
+        if(!object.value(P_FILTERS).isArray())
+          throw SvException(QString("Неверная конфигурация json. Раздел \"%1\" отсутствует или не является массивом").arg(P_FILTERS));
 
         else
         {
-          QJsonArray tasks = object.value(P_TASKS).toArray();
+          QJsonArray tasks = object.value(P_FILTERS).toArray();
 
           for(QJsonValue t: tasks) {
 
@@ -496,7 +496,7 @@ namespace zn1 {
               continue;
 
             QJsonObject to = t.toObject();
-            Task task = Task{};
+            Filter filter = Filter{};
 
             // task id
             P = P_ID;
@@ -509,7 +509,7 @@ namespace zn1 {
                                    .arg(P).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact)))
                                    .arg("Идентификатор задачи должен быть задан целым положительным числом"));
 
-              for(zn1::Task task: p.tasks) {
+              for(zn1::Filter task: p.filters) {
 
                 if(task.id() == id)
                   throw SvException(QString(IMPERMISSIBLE_VALUE)
@@ -517,11 +517,11 @@ namespace zn1 {
                                      .arg(QString("Не уникальный идентификатор задачи: %1").arg(id)));
               }
 
-              task.setId(id);
+              filter.setId(id);
 
             }
             else
-              task.setId(QDateTime::currentMSecsSinceEpoch());
+              filter.setId(QDateTime::currentMSecsSinceEpoch());
 
             // marker
             P = P_MARKER;
@@ -534,7 +534,7 @@ namespace zn1 {
                                    .arg(P).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact)))
                                    .arg("Не допустим пустой маркер"));
 
-              task.setMarker(m);
+              filter.setMarker(m);
 
             }
             else
@@ -551,7 +551,7 @@ namespace zn1 {
                                    .arg(P).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact)))
                                    .arg("Не допустимое значение начала периода"));
 
-              task.setBegin(b);
+              filter.setBegin(b);
 
             }
             else
@@ -568,47 +568,47 @@ namespace zn1 {
                                    .arg(P).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact)))
                                    .arg("Не допустимое значение конца периода"));
 
-              task.setEnd(e);
+              filter.setEnd(e);
 
             }
             else
               throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact))).arg(P));
 
-            // path
-            P = P_PATH;
+            // signal
+            P = P_SIGNAL;
             if(to.contains(P)) {
 
-              QString path = to.value(P).toString("");
+              QString signal = to.value(P).toString("");
 
-              if(path.isEmpty())
+              if(signal.isEmpty())
                 throw SvException(QString(IMPERMISSIBLE_VALUE)
                                    .arg(P).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact)))
-                                   .arg("Необходимо указать путь для сохранения данных"));
+                                   .arg("Необходимо указать имя сигнала"));
 
-              task.setPath(path);
+              filter.setSignal(signal);
 
             }
             else
               throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact))).arg(P));
 
-            // save_file
-            P = P_FILE_NAME;
-            if(to.contains(P)) {
+//            // save_file
+//            P = P_FILE_NAME;
+//            if(to.contains(P)) {
 
-              QString file_name = to.value(P).toString("");
+//              QString file_name = to.value(P).toString("");
 
-              if(file_name.isEmpty())
-                throw SvException(QString(IMPERMISSIBLE_VALUE)
-                                   .arg(P).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact)))
-                                   .arg("Необходимо указать имя файла для сохранения загруженных данных"));
+//              if(file_name.isEmpty())
+//                throw SvException(QString(IMPERMISSIBLE_VALUE)
+//                                   .arg(P).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact)))
+//                                   .arg("Необходимо указать имя файла для сохранения загруженных данных"));
 
-              task.setFileName(file_name);
+//              filter.setFileName(file_name);
 
-            }
-            else
-              throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact))).arg(P));
+//            }
+//            else
+//              throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact))).arg(P));
 
-            p.tasks.append(task);
+            p.filters.append(filter);
 
           }
         }
@@ -640,23 +640,23 @@ namespace zn1 {
 //      p.insert(P_LOG_LEVEL,      QJsonValue(sv::log::levelToString(log_level)).toString());
       p.insert(P_START_BYTE,     QJsonValue(start_byte));
 
-      QJsonArray a;
-      for(const Task& task: tasks) {
+      QJsonArray f;
+      for(const Filter& filter: filters) {
 
         QJsonObject t;
 
-        t.insert(P_ID,        task.id());
-        t.insert(P_MARKER,    task.marker());
-        t.insert(P_BEGIN,     task.begin().toString(DEFAULT_DATETIME_FORMAT));
-        t.insert(P_END,       task.end().toString(DEFAULT_DATETIME_FORMAT));
-        t.insert(P_PATH,      task.path());
-        t.insert(P_FILE_NAME, task.file_name());
+//        t.insert(P_ID,        task.id());
+        t.insert(P_MARKER,    filter.marker());
+        t.insert(P_BEGIN,     filter.begin().toString(DEFAULT_DATETIME_FORMAT));
+        t.insert(P_END,       filter.end().toString(DEFAULT_DATETIME_FORMAT));
+        t.insert(P_SIGNAL,    filter.signal());
+//        t.insert(P_FILE_NAME, task.file_name());
 
-        a.append(t);
+        f.append(t);
       }
 
       j.insert(P_PARAMS,  QJsonValue(p));
-      j.insert(P_TASKS,   QJsonValue(a));
+      j.insert(P_FILTERS, QJsonValue(f));
 
       return j;
 
@@ -856,7 +856,7 @@ namespace zn1 {
 
   };
 
-  struct ZNOuterSystem {
+  struct OuterSystem {
     QString marker        = "";
     QString lib           = "";
     QString signals_file  = "";
@@ -875,7 +875,7 @@ namespace zn1 {
     sv::log::Level  log_level     = sv::log::llInfo;
     QString         zn_data_file  = QString();
 
-    QList<ZNOuterSystem> outer_systems       = QList<ZNOuterSystem>();
+    QList<OuterSystem> outer_systems       = QList<OuterSystem>();
 
     static RecoveryConfig fromJsonString(const QString& json_string) //throw (SvException)
     {
@@ -939,7 +939,7 @@ namespace zn1 {
             continue;
 
           QJsonObject so = s.toObject();
-          ZNOuterSystem system;
+          OuterSystem system;
 
           // marker
           P = P_MARKER;

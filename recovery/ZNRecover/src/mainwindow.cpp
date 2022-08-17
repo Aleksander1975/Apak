@@ -28,6 +28,12 @@ MainWindow::MainWindow(QWidget *parent) :
     return;
   }
 
+  if(!createDb(error)) {
+
+    QMessageBox::critical(this, "Ошибка", error);
+    return;
+  }
+
   ui->lineSaveFilePath->setText(m_config.zn_data_file);
   ui->lineZNIP->setText(m_config.readerParams.host.toString());
   ui->spinZNPort->setValue(m_config.readerParams.port);
@@ -143,6 +149,84 @@ MainWindow::~MainWindow()
   delete m_logger;
 
   delete ui;
+}
+
+bool MainWindow::createDb(QString& error)
+{
+  try {
+
+    m_db = QSqlDatabase::addDatabase("QSQLITE");
+
+    m_db.setDatabaseName(":memory:");
+
+    if (!m_db.open())
+        throw SvException("Unable to establish a database connection");
+
+    QSqlQuery query;
+
+    if(!query.exec("create table outer_systems (marker varchar(20) primary key, "
+                                    "lib varchar(255), "
+                                    "description varchar(1000), "
+                                    "signals varchar(255))"))
+      throw SvException(query.lastError().text());
+
+    if(!query.exec("create table signals (id int, "
+                                    "marker varchar(20), "
+                                    "name varchar(255) primary key, "
+                                    "description varchar(1000), "
+                                    "params varchar(255))"))
+       throw SvException(query.lastError().text());
+
+    if(!query.exec("create table filters (marker varchar(20) primary key, "
+                                    "signal varchar(255), "
+                                    "begin datetime, "
+                                    "end  datetime)"))
+      throw SvException(query.lastError().text());
+
+    for(auto system: m_config.outer_systems) {
+
+      if(!query.exec(QString("insert into outer_systems values('%1', '%2', '%3', '%4')")
+                 .arg(system.marker)
+                 .arg(system.lib)
+                 .arg(system.description)
+                 .arg(system.signals_file)))
+        throw SvException(query.lastError().text());
+
+      for(auto signal: system.signals_list) {
+
+        if(!query.exec(QString("insert into signals values(%1, '%2', '%3', '%4', '%5')")
+                   .arg(signal.id)
+                   .arg(system.marker)
+                   .arg(signal.name)
+                   .arg(signal.description)
+                   .arg(signal.params)))
+          throw SvException(query.lastError().text());
+
+      }
+    }
+
+    for(auto filter: m_config.pickerParams.filters) {
+
+      if(!query.exec(QString("insert into filters values(%1, '%2', '%3', '%4')")
+                 .arg(filter.marker())
+                 .arg(filter.signal())
+                 .arg(filter.begin().toString("yyyy-MM-dd hh:mm:ss"))
+                 .arg(filter.end().toString("yyyy-MM-dd hh:mm:ss"))))
+        throw SvException(query.lastError().text());
+
+    }
+
+    query.finish();
+
+    return true;
+
+  }
+  catch(SvException& e) {
+
+    error = e.error;
+    return false;
+
+  }
 }
 
 /*void MainWindow::on_bnSelectZN_clicked()
@@ -368,33 +452,34 @@ void MainWindow::backToBegin()
 
 void MainWindow::on_bnAddTask_clicked()
 {
-  TaskEditor* te = new TaskEditor(this);
+//  TaskEditor* te = new TaskEditor(this);
 
-  switch (te->exec()) {
+//  switch (te->exec()) {
 
-    case TaskEditor::Accepted:
-    {
-      QString error = QString();
-      if(!addTask(te->task(), error))
-        QMessageBox::critical(this, "Ошибка", error);
+//    case TaskEditor::Accepted:
+//    {
+//      QString error = QString();
+//      if(!addTask(te->task(), error))
+//        QMessageBox::critical(this, "Ошибка", error);
 
-    }
-    break;
+//    }
+//    break;
 
-    case TaskEditor::Error:
+//    case TaskEditor::Error:
 
-      QMessageBox::critical(this, "Ошибка", te->lastError());
-      break;
+//      QMessageBox::critical(this, "Ошибка", te->lastError());
+//      break;
 
-    default:
-      break;
-  }
+//    default:
+//      break;
+//  }
 
-  delete te;
+//  delete te;
 }
 
 void MainWindow::on_bnEditTask_clicked()
 {
+/*
   TaskEditor* te = nullptr;
 
   try {
@@ -412,7 +497,7 @@ void MainWindow::on_bnEditTask_clicked()
     if(!m_tasks.contains(current_task_id))
       throw SvException("current task_id not found. on_bnEditTask_clicked");
 
-    zn1::Task& current_task = m_tasks[current_task_id];
+    zn1::Filter& current_task = m_tasks[current_task_id];
 
     te = new TaskEditor(this, &current_task);
 
@@ -461,11 +546,12 @@ void MainWindow::on_bnEditTask_clicked()
       delete te;
 
   }
+  */
 }
 
 void MainWindow::on_bnRemoveTask_clicked()
 {
-  if(ui->tableWidget->currentRow() < 0)
+/*  if(ui->tableWidget->currentRow() < 0)
     return;
 
   int current_row = ui->tableWidget->currentRow();
@@ -488,117 +574,76 @@ void MainWindow::on_bnRemoveTask_clicked()
   m_widget_items.remove(current_task_id);
 
   ui->tableWidget->removeRow(current_row);
-
+*/
 }
 
 bool MainWindow::makeTree()
 {
-
-  QSqlError serr;
-  QSqlQuery* q = new QSqlQuery(PGDB->db);
-  int column_count = _model->rootItem()->columnCount();
+  int column_count = 3; //_model->rootItem()->columnCount();
 
   try {
 
     _model->clear();
 
-    /** группа Конфигурация пульта **/
-    _standRoot = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
-    _standRoot->parent_index = _model->rootItem()->index;
-    _standRoot->is_main_row = true;
-    _standRoot->item_type = itStandRoot;
-    _standRoot->setData(1, "Конфигурация пульта");
-//    _standRoot->setData(0, QString(" "));
-    for(int i = 0; i < column_count; i++) _standRoot->setInfo(i, ItemInfo());
-    _standRoot->setInfo(0, ItemInfo(itStandRootIcon, ""));
+    QMap<QString, TreeItem*> fmap{};
+
+    // сначала добавляем в root все системы, без повторов
+    for(auto filter: m_config.pickerParams.filters) {
+
+      if(fmap.keys().contains(filter.marker()))
+        continue;
+
+      // пооверяем, что такой маркер имеется в списке внешиих систем
+      bool found = false;
+      for(auto os: m_config.outer_systems) {
+
+        found = (os.marker == filter.marker());
+
+        if(found)
+          break;
+      }
+
+      if(!found) {
+
+        emit message(QString("Задан неверный маркер для фильтра: \"%1\"").arg(filter.marker()), sv::log::llError, sv::log::mtError);
+        continue;
+
+      }
 
 
-    // добавляем разделы Общие сведения, Параметры запуска, Конфигурация КСУТС сервера, Логгер КСУТС сервера
-//    _general_info = _standRoot->insertChildren(_standRoot->childCount(), 1, column_count);
-//    _general_info->parent_index = _standRoot->index;
-//    _general_info->is_main_row = true;
-//    _general_info->item_type = itStandInfo;
-//    _general_info->setData(1, "Общие сведения");
+      TreeItem* s_item = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
+      s_item->setData(0, filter.marker());
+      s_item->parent_index = _model->rootItem()->index;
+      s_item->is_main_row = true;
+      s_item->item_type = itConfig;
+      for(int i = 0; i < column_count; i++) s_item->setInfo(i, ItemInfo());
+//      s_item->setInfo(0, ItemInfo(itDevicesRootIcon, ""));
 
-    _autostart = _standRoot->insertChildren(_standRoot->childCount(), 1, column_count);
-    _autostart->parent_index = _standRoot->index;
-    _autostart->is_main_row = true;
-    _autostart->item_type = itAutostart;
-    _autostart->setData(1, "Параметры автозапуска");
+      fmap.insert(filter.marker(), s_item);
 
-    _ksuts_config = _standRoot->insertChildren(_standRoot->childCount(), 1, column_count);
-    _ksuts_config->parent_index = _standRoot->index;
-    _ksuts_config->is_main_row = true;
-    _ksuts_config->item_type = itConfig;
-    _ksuts_config->setData(1, "Конфигурация КСУТС сервера");
+    }
 
-    _ksuts_logger = _standRoot->insertChildren(_standRoot->childCount(), 1, column_count);
-    _ksuts_logger->parent_index = _standRoot->index;
-    _ksuts_logger->is_main_row = true;
-    _ksuts_logger->item_type = itLogger;
-    _ksuts_logger->setData(1, "Логи КСУТС сервера");
+    // теперь добавляем в каждую систему фильтры - сигнал и временной интервал
+    for(auto filter: m_config.pickerParams.filters) {
 
-    /** разделитель 1 **/
-    TreeItem* div1 = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
-    div1->parent_index = _model->rootItem()->index;
-    div1->item_type = itUndefined;
-    div1->setData(1, QString(100, ' '));
+      QString marker = filter.marker();
+
+      if(!fmap.contains(marker))
+        continue;
+
+      TreeItem* root_system = fmap.value(marker);
+      TreeItem* filter_item = root_system->insertChildren(root_system->childCount(), 1, column_count);
+      filter_item->parent_index = root_system->index;
+      filter_item->is_main_row = false;
+      filter_item->item_type = itSignal;
+      for(int i = 0; i < column_count; i++) filter_item->setInfo(i, ItemInfo());
+      filter_item->setInfo(0, ItemInfo(itDevicesRootIcon, ""));
+      filter_item->setData(0, QString(" "));
 
 
-    /**      группа "Устройства"      */
-    _devicesRoot = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
-    _devicesRoot->parent_index = _model->rootItem()->index;
-    _devicesRoot->is_main_row = true;
-    _devicesRoot->item_type = itDevicesRoot;
-    for(int i = 0; i < column_count; i++) _devicesRoot->setInfo(i, ItemInfo());
-    _devicesRoot->setInfo(0, ItemInfo(itDevicesRootIcon, ""));
-//    _devicesRoot->setData(0, QString(" "));
-    // определяем общее кол-во и кол-во привязанных устройств для этой стойки
-    serr = PGDB->execSQL(QString(SQL_SELECT_DEVICES_COUNT_STR), q);
-    if(serr.type() != QSqlError::NoError) _exception.raise(serr.text());
-    q->first();
+    }
 
-    _devicesRoot->setData(1, QString("Устройства %1").arg(q->value(0).toString()));
-
-    q->finish();
-
-    // заполняем список устройств
-    pourDevicesToRoot(_devicesRoot);
-
-    // заполняем список сигналов
-    pourSignalsToDevices(_devicesRoot);
-
-    /** разделитель 2 **/
-    TreeItem* div2 = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
-    div2->parent_index = _model->rootItem()->index;
-    div2->item_type = itUndefined;
-    div2->setData(1, QString(100, ' '));
-
-
-    /**    группа "Хранилища"       **/
-    _storagesRoot = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
-    _storagesRoot->parent_index = _model->rootItem()->index;
-    _storagesRoot->is_main_row = true;
-    _storagesRoot->item_type = itStoragesRoot;
-    _storagesRoot->setData(1, QString("Хранилища"));
-//    _storagesRoot->setData(0, QString(" "));
-    for(int i = 0; i < column_count; i++) _storagesRoot->setInfo(i, ItemInfo());
-    _storagesRoot->setInfo(0, ItemInfo(itStoragesRootIcon, ""));
-
-
-    // читаем все! хранилища
-    pourStoragesToRoot(_storagesRoot);
-
-    // заполняем список устройств
-    pourDevicesToStorages(_storagesRoot);
-
-    // сигналы
-    pourSignalsToStorages(_storagesRoot);
-
-
-    delete q;
-
-    ui->treeView->expandToDepth(0);
+    ui->treeViewFilters->expandToDepth(1);
 
     return true;
 
@@ -606,18 +651,13 @@ bool MainWindow::makeTree()
 
   catch(SvException& e) {
 
-    q->finish();
-    delete q;
-
-    mainlog << sv::log::Time << sv::log::mtCritical << e.error << sv::log::endl;
-
     return false;
 
   }
 
 }
 
-bool MainWindow::addTask(zn1::Task* newtask, QString& error)
+/*bool MainWindow::addTask(zn1::Filter* newtask, QString& error)
 {
   for(auto& task: m_tasks) {
 
@@ -653,7 +693,8 @@ bool MainWindow::addTask(zn1::Task* newtask, QString& error)
   m_widget_items[newtask->id()].append(new QTableWidgetItem(newtask->save_path()));
   ui->tableWidget->setItem(row, 3, m_widget_items[newtask->id()].last());
 
-  m_tasks.insert(newtask->id(), zn1::Task(newtask));
+  m_tasks.insert(newtask->id(), zn1::Filter(newtask));
 
   return true;
 }
+*/

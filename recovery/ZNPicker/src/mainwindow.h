@@ -66,7 +66,7 @@ private:
   Ui::MainWindow *ui;
 
 //  QMap<uint, QList<zn1::TaskPeriod>>     m_task_intervals;
-  QMap<qint64, zn1::Task>             m_tasks;
+  QMap<qint64, zn1::Filter>             m_tasks;
 //  QMap<int, TaskTableItem>            m_tasks;
 
   QMap<int, QList<QTableWidgetItem*>> m_widget_items;
@@ -83,7 +83,7 @@ private:
   bool loadConfig(QString& error);
   bool saveConfig(QString& error);
 
-  bool addTask(zn1::Task* newtask, QString& error);
+  bool addTask(zn1::Filter* newtask, QString& error);
 
 
 signals:

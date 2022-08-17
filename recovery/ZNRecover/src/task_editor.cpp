@@ -1,6 +1,6 @@
 ﻿#include "task_editor.h"
 
-TaskEditor::TaskEditor(QWidget *parent, zn1::Task* task) :
+TaskEditor::TaskEditor(QWidget *parent, zn1::Filter* task) :
   QDialog(parent),
   ui(new Ui::TaskEditorDialog)
 {

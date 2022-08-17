@@ -22,7 +22,7 @@ ZNSelectDataDialog::ZNSelectDataDialog(const zn1::RecoveryConfig& config, QWidge
   ui->treeViewTasks->setColumnWidth(1, 130);
   ui->treeViewTasks->setColumnWidth(2, 130);
 
-  for(auto task: m_config.pickerParams.tasks) {
+  for(auto task: m_config.pickerParams.filters) {
 
     TreeItem* newitem = m_task_model->rootItem()->insertChildren(m_task_model->rootItem()->childCount(), 1, m_task_model->rootItem()->columnCount());
     newitem->parent_index = m_task_model->rootItem()->index;

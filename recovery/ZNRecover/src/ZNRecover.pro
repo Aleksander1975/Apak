@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network
+QT       += core gui network sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -21,7 +21,6 @@ SOURCES += main.cpp\
     ../../../../../job/svlib/Network/Tcp/Client/1.0/sv_tcp_client.cpp \
     zn_select_dialog.cpp \
     ../../../../../job/Modus/global/signal/sv_signal.cpp \
-    task_editor.cpp \
     zn_picker.cpp \
     treemodel.cpp \
     treeitem.cpp
@@ -35,10 +34,10 @@ HEADERS  += mainwindow.h \
     zn_select_dialog.h \
     ../../recovery_defs.h \
     ../../../../../job/Modus/global/signal/sv_signal.h \
-    task_editor.h \
     zn_picker.h \
     treemodel.h \
-    treeitem.h
+    treeitem.h \
+    database.h
 
 FORMS    += mainwindow.ui \
     select_zn_dialog.ui

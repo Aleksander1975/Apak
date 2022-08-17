@@ -109,15 +109,15 @@ private:
 
   zn1::RecoveryConfig               m_config;
 
-  zn1::Task                         m_current_task;
+  zn1::Filter                         m_current_task;
 
   TreeModel*                        m_task_model;
   TreeModel*                        m_signal_model;
 
-  QMap<TreeItem*, zn1::Task>        m_treeitem_2_task;
+  QMap<TreeItem*, zn1::Filter>        m_treeitem_2_task;
   QMap<TreeItem*, modus::SvSignal*> m_treeitem_2_signal;
 
-  zn1::ZNOuterSystem                m_current_system;
+  zn1::OuterSystem                m_current_system;
   zn1::AbstractOuterSystem*         m_current_system_lib_object = nullptr;
 
 //  QMap<modus::SignalConfig, svgraph::GraphParams>        m_checked_signals;

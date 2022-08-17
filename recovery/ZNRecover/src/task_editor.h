@@ -8,11 +8,11 @@
 #include <QFileDialog>
 #include <QDir>
 
-#include "ui_task_editor_dialog.h"
+//#include "ui_task_editor_dialog.h"
 
 #include "../../../../../job/svlib/SvException/svexception.h"
 #include "../../recovery_defs.h"
-#include "zn_select_system_dialog.h"
+//#include "zn_select_system_dialog.h"
 
 namespace Ui {
   class TaskEditorDialog;
@@ -26,10 +26,10 @@ class TaskEditor : public QDialog
     enum Result { Accepted = QDialog::Accepted, Rejected = QDialog::Rejected, Error = -1 };
     enum ShowMode:bool { smNew = true, smEdit = false };
 
-    explicit TaskEditor(QWidget *parent, zn1::Task* task = nullptr);
+    explicit TaskEditor(QWidget *parent, zn1::Filter* task = nullptr);
     ~TaskEditor();
 
-    zn1::Task* task() { return &m_task; }
+    zn1::Filter* task() { return &m_task; }
 
     QString lastError() { return m_last_error; }
 
@@ -50,7 +50,7 @@ private slots:
 private:
     Ui::TaskEditorDialog *ui;
 
-    zn1::Task m_task;
+    zn1::Filter m_task;
 
     QString m_last_error = "";
 
