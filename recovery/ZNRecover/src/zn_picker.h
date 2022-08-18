@@ -19,7 +19,7 @@
 
 //#include "../../zn_global.h"
 
-#include "task_editor.h"
+#include "filter_editor.h"
 
 
 namespace zn1 {

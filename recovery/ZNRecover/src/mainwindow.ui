@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>613</width>
+    <width>818</width>
     <height>573</height>
    </rect>
   </property>
@@ -845,106 +845,35 @@
                 <number>1</number>
                </property>
                <item>
-                <widget class="QPushButton" name="bnAddTask">
+                <widget class="QLabel" name="label_9">
                  <property name="minimumSize">
                   <size>
-                   <width>32</width>
-                   <height>32</height>
+                   <width>70</width>
+                   <height>0</height>
                   </size>
                  </property>
                  <property name="maximumSize">
                   <size>
-                   <width>32</width>
-                   <height>32</height>
+                   <width>70</width>
+                   <height>16777215</height>
                   </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <weight>50</weight>
+                   <bold>false</bold>
+                  </font>
                  </property>
                  <property name="text">
-                  <string/>
+                  <string>Система</string>
                  </property>
-                 <property name="icon">
-                  <iconset resource="../res/res.qrc">
-                   <normaloff>:/main/add.ico</normaloff>:/main/add.ico</iconset>
-                 </property>
-                 <property name="iconSize">
-                  <size>
-                   <width>32</width>
-                   <height>32</height>
-                  </size>
-                 </property>
-                 <property name="flat">
-                  <bool>true</bool>
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="bnEditTask">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>32</width>
-                   <height>32</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>32</width>
-                   <height>32</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string/>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../res/res.qrc">
-                   <normaloff>:/main/edit.ico</normaloff>:/main/edit.ico</iconset>
-                 </property>
-                 <property name="iconSize">
-                  <size>
-                   <width>32</width>
-                   <height>32</height>
-                  </size>
-                 </property>
-                 <property name="flat">
-                  <bool>true</bool>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="bnRemoveTask">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>32</width>
-                   <height>32</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>33</width>
-                   <height>33</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string/>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="../res/res.qrc">
-                   <normaloff>:/main/cross.ico</normaloff>:/main/cross.ico</iconset>
-                 </property>
-                 <property name="iconSize">
-                  <size>
-                   <width>32</width>
-                   <height>32</height>
-                  </size>
-                 </property>
-                 <property name="flat">
-                  <bool>true</bool>
-                 </property>
-                </widget>
+                <widget class="QComboBox" name="cbSystems"/>
                </item>
                <item>
                 <spacer name="horizontalSpacer_5">
@@ -958,6 +887,22 @@
                   </size>
                  </property>
                 </spacer>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_10">
+                 <property name="font">
+                  <font>
+                   <weight>50</weight>
+                   <bold>false</bold>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Быстрый поиск</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="lineQuickSearch"/>
                </item>
               </layout>
              </widget>
@@ -981,6 +926,19 @@
               </property>
               <property name="expandsOnDoubleClick">
                <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="lblSignalDescription">
+              <property name="font">
+               <font>
+                <weight>50</weight>
+                <bold>false</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>TextLabel</string>
               </property>
              </widget>
             </item>
@@ -1047,7 +1005,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>613</width>
+     <width>818</width>
      <height>22</height>
     </rect>
    </property>

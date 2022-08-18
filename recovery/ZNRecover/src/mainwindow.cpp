@@ -28,11 +28,6 @@ MainWindow::MainWindow(QWidget *parent) :
     return;
   }
 
-  if(!createDb(error)) {
-
-    QMessageBox::critical(this, "Ошибка", error);
-    return;
-  }
 
   ui->lineSaveFilePath->setText(m_config.zn_data_file);
   ui->lineZNIP->setText(m_config.readerParams.host.toString());
@@ -54,18 +49,31 @@ MainWindow::MainWindow(QWidget *parent) :
 
   ui->textLog->document()->setMaximumBlockCount(2000);
 
-  QLabel *lblStatus1 = new QLabel(statusBar());
-  QLabel *lblStatus2 = new QLabel(this);
+//  QLabel *lblStatus1 = new QLabel(statusBar());
+//  QLabel *lblStatus2 = new QLabel(this);
 
-  this->statusBar()->addPermanentWidget(lblStatus1);
-  qDebug() << lblStatus1->parent()->objectName();
-
-  this->statusBar()->addWidget(lblStatus2);
+//  this->statusBar()->addPermanentWidget(lblStatus1);
+//  this->statusBar()->addWidget(lblStatus2);
 
 //  ui->progressBar->setVisible(false);
 
 //  lblStatus1->setText(QString("Сегмент: %1").arg(11));
 //  lblStatus2->setText(QString("Общий: %1").arg(222));
+
+  if(!createDb(error)) {
+
+    QMessageBox::critical(this, "Ошибка", error);
+    return;
+  }
+
+  _model = new TreeModel(QString(MAIN_TREE_HEADERS).split(';'), ui->treeViewFilters);
+  ui->treeViewFilters->setModel(_model);
+
+  makeTree();
+
+  ui->treeViewFilters->setColumnWidth(0, 300);
+  ui->treeViewFilters->setColumnWidth(1, 130);
+  ui->treeViewFilters->setColumnWidth(2, 130);
 
 }
 
@@ -162,7 +170,7 @@ bool MainWindow::createDb(QString& error)
     if (!m_db.open())
         throw SvException("Unable to establish a database connection");
 
-    QSqlQuery query;
+    QSqlQuery query(m_db);
 
     if(!query.exec("create table outer_systems (marker varchar(20) primary key, "
                                     "lib varchar(255), "
@@ -177,11 +185,15 @@ bool MainWindow::createDb(QString& error)
                                     "params varchar(255))"))
        throw SvException(query.lastError().text());
 
+    query.finish();
+
     if(!query.exec("create table filters (marker varchar(20) primary key, "
                                     "signal varchar(255), "
-                                    "begin datetime, "
-                                    "end  datetime)"))
+                                    "begin datetime default null, "
+                                    "end  datetime default null)"))
       throw SvException(query.lastError().text());
+
+    query.finish();
 
     for(auto system: m_config.outer_systems) {
 
@@ -191,6 +203,8 @@ bool MainWindow::createDb(QString& error)
                  .arg(system.description)
                  .arg(system.signals_file)))
         throw SvException(query.lastError().text());
+
+      query.finish();
 
       for(auto signal: system.signals_list) {
 
@@ -202,18 +216,20 @@ bool MainWindow::createDb(QString& error)
                    .arg(signal.params)))
           throw SvException(query.lastError().text());
 
+        query.finish();
       }
     }
 
     for(auto filter: m_config.pickerParams.filters) {
 
-      if(!query.exec(QString("insert into filters values(%1, '%2', '%3', '%4')")
+      if(!query.exec(QString("insert into filters values('%1', '%2', '%3', '%4')")
                  .arg(filter.marker())
                  .arg(filter.signal())
                  .arg(filter.begin().toString("yyyy-MM-dd hh:mm:ss"))
                  .arg(filter.end().toString("yyyy-MM-dd hh:mm:ss"))))
         throw SvException(query.lastError().text());
 
+      query.finish();
     }
 
     query.finish();
@@ -577,9 +593,9 @@ void MainWindow::on_bnRemoveTask_clicked()
 */
 }
 
-bool MainWindow::makeTree()
+bool MainWindow::makeTree(const QString& filter_by_marker)
 {
-  int column_count = 3; //_model->rootItem()->columnCount();
+  int column_count = 4; //_model->rootItem()->columnCount();
 
   try {
 
@@ -587,62 +603,91 @@ bool MainWindow::makeTree()
 
     QMap<QString, TreeItem*> fmap{};
 
-    // сначала добавляем в root все системы, без повторов
-    for(auto filter: m_config.pickerParams.filters) {
+    QSqlQuery q(m_db);
 
-      if(fmap.keys().contains(filter.marker()))
-        continue;
 
-      // пооверяем, что такой маркер имеется в списке внешиих систем
-      bool found = false;
-      for(auto os: m_config.outer_systems) {
+    if(!q.exec(QString("select distinct outer_systems.marker as marker, outer_systems.description as description "
+               "from outer_systems "
+//               "left join outer_systems on filters.marker = outer_systems.marker "
+               "%1 "
+               "order by marker asc").arg(filter_by_marker.isEmpty() ? "" : QString("where marker = '%1'").arg(filter_by_marker))))
+      throw SvException(q.lastError().text());
 
-        found = (os.marker == filter.marker());
+    // сначала добавляем в список и в root все системы, без повторов
+    ui->cbSystems->addItem("Все", QString());
 
-        if(found)
-          break;
-      }
+    while(q.next()) {
 
-      if(!found) {
+      QString marker = q.value("marker").toString();
+      QString description = q.value("description").toString();
 
-        emit message(QString("Задан неверный маркер для фильтра: \"%1\"").arg(filter.marker()), sv::log::llError, sv::log::mtError);
-        continue;
-
-      }
-
+      ui->cbSystems->addItem(QString("%1 %2").arg(marker).arg(description), marker);
 
       TreeItem* s_item = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
-      s_item->setData(0, filter.marker());
+      s_item->setData(0, marker);
+      s_item->setData(3, description);
       s_item->parent_index = _model->rootItem()->index;
       s_item->is_main_row = true;
-      s_item->item_type = itConfig;
+      s_item->item_type = itSystem;
       for(int i = 0; i < column_count; i++) s_item->setInfo(i, ItemInfo());
 //      s_item->setInfo(0, ItemInfo(itDevicesRootIcon, ""));
 
-      fmap.insert(filter.marker(), s_item);
+      fmap.insert(marker, s_item);
 
     }
 
-    // теперь добавляем в каждую систему фильтры - сигнал и временной интервал
-    for(auto filter: m_config.pickerParams.filters) {
+    q.finish();
 
-      QString marker = filter.marker();
+    // теперь добавляем в каждую систему фильтры - сигнал и временной интервал
+
+    if(!q.exec(QString("select signals.marker as marker, "
+                       "not (filters.begin is null or filters.end is null) as filtered, "
+//                       WHEN 'USA'
+//                           THEN 'Domestic'
+//                       ELSE 'Foreign'
+//                   END CustomerGroup"
+               "signals.name as signal, "
+               "signals.description as description, "
+               "filters.begin, filters.end "
+               "from signals  "
+               "left join filters on filters.signal = signals.name "
+               "%1"
+               "order by filtered desc, signal asc").arg(filter_by_marker.isEmpty() ? "" : QString("where marker = '%1'").arg(filter_by_marker))))
+      throw SvException(q.lastError().text());
+
+    while(q.next()) {
+
+      QString marker      = q.value("marker").toString();
+      QString signal      = q.value("signal").toString();
+      QString begin       = q.value("begin").toString();
+      QString end         = q.value("end").toString();
+      QString description = q.value("description").toString();
+      bool    filtered    = q.value("filtered").toBool();
 
       if(!fmap.contains(marker))
         continue;
 
-      TreeItem* root_system = fmap.value(marker);
-      TreeItem* filter_item = root_system->insertChildren(root_system->childCount(), 1, column_count);
-      filter_item->parent_index = root_system->index;
-      filter_item->is_main_row = false;
-      filter_item->item_type = itSignal;
-      for(int i = 0; i < column_count; i++) filter_item->setInfo(i, ItemInfo());
-      filter_item->setInfo(0, ItemInfo(itDevicesRootIcon, ""));
-      filter_item->setData(0, QString(" "));
+      TreeItem* parent_system = fmap.value(marker);
 
+      TreeItem* filter_item = parent_system->insertChildren(parent_system->childCount(), 1, column_count);
+      filter_item->parent_index = parent_system->index;
+      filter_item->is_main_row = false;
+      filter_item->item_type = filtered ? itFilteredSignal : itSignal;
+//      for(int i = 0; i < column_count; i++) {
+
+        ItemInfo ii = filtered ? ItemInfo(itFilteredSignal, "signal", true, true) : ItemInfo(itSignal, "signal");
+
+        filter_item->setInfo(0, ii);
+//      }
+
+      filter_item->setData(0, signal);
+      filter_item->setData(1, begin);
+      filter_item->setData(2, end);
+      filter_item->setData(3, description);
 
     }
 
+    ui->treeViewFilters->setModel(_model);
     ui->treeViewFilters->expandToDepth(1);
 
     return true;
@@ -651,6 +696,7 @@ bool MainWindow::makeTree()
 
   catch(SvException& e) {
 
+    emit message(e.error, sv::log::llError, sv::log::mtCritical);
     return false;
 
   }

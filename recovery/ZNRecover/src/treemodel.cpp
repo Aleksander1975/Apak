@@ -91,21 +91,17 @@ QVariant TreeModel::data(const QModelIndex &index, int role) const
     switch(role)
     {
 
-//      case Qt::CheckStateRole:
-//        if(item->info(index.column()).is_checkable)
-//          return item->info(index.column()).is_checked;
+      case Qt::CheckStateRole:
+        if(item->info(index.column()).is_checkable)
+          return item->info(index.column()).is_checked;
 
-//        else return QVariant();
+        else return QVariant();
 
-//        break;
+        break;
 
 
       case Qt::DisplayRole:
       case Qt::EditRole:
-        if(item->info(index.column()).type == itSignalStorageLink)
-          return QVariant();
-
-        else
           return item->data(index.column());
 
         break;
@@ -113,42 +109,41 @@ QVariant TreeModel::data(const QModelIndex &index, int role) const
       case Qt::FontRole: {
 
         QFont font;
-        font.setFamily("SansSerif");
-        font.setPointSize(11);
+//        font.setFamily("SansSerif");
+        font.setPointSize(10);
 //        if((item->is_main_row && (item->info(index.column()).type != itDeviceParams))
 //           || (item->info(index.column()).type == itSignalName))
 
         switch (item->item_type) {
 
-          case itDevicesRoot:
-          case itStoragesRoot:
-          case itStandRoot:
+          case itSystem:
+//          case itSignal:
           {
             font.setBold(true);
 
-            switch (item->info(index.column()).type) {
+//            switch (item->info(index.column()).type) {
 
-              case itStandRootIcon:
-              case itDevicesRootIcon:
-              case itStoragesRootIcon:
-                font.setPointSize(16);
-                break;
+//              case itStandRootIcon:
+//              case itDevicesRootIcon:
+//              case itStoragesRootIcon:
+//                font.setPointSize(16);
+//                break;
 
-              default:
-                font.setPointSize(11);
-                break;
+//              default:
+//                font.setPointSize(11);
+//                break;
 
-            }
+//            }
 
             break;
 
           }
 
-          case itDeviceWithNoSignals:
-          case itStorageWithNoSignals:
+//          case itDeviceWithNoSignals:
+//          case itStorageWithNoSignals:
 
-            font.setItalic(true);
-            break;
+//            font.setItalic(true);
+//            break;
 
         default:
           break;
@@ -179,10 +174,10 @@ QVariant TreeModel::data(const QModelIndex &index, int role) const
 
           switch (item->item_type) {
 
-            case itUndefined:
-            case itDeviceWithNoSignals:
-            case itStorageWithNoSignals:
-              color.setColor(Qt::gray);
+            case itSignal:
+//            case itDeviceWithNoSignals:
+//            case itStorageWithNoSignals:
+              color.setColor(Qt::darkGray);
               break;
 
 //            case itSignalTypeAnalog:
@@ -215,18 +210,18 @@ QVariant TreeModel::data(const QModelIndex &index, int role) const
 
         QBrush color(Qt::white);
 
-        if(item->is_main_row)
-          color = QBrush(QColor(255, 255, 250));
+//        if(item->is_main_row)
+//          color = QBrush(QColor(255, 255, 250));
 
-        else
+//        else
 
           switch(item->item_type) {
 
-            case(itSignalTypeDiscrete):
-              color = QColor("aliceblue");
-              break;
+//            case(itSignal):
+//              color = QColor("aliceblue");
+//              break;
 
-            case(itSignalTypeAnalog):
+            case(itFilteredSignal):
               color = QColor("honeydew");
               break;
           }
@@ -243,29 +238,29 @@ QVariant TreeModel::data(const QModelIndex &index, int role) const
 
 //          QImage pix = QImage(18, 18, QImage::Format_ARGB32);
 //          QImage()
-          switch (item->info(index.column()).type) {
+//          switch (item->info(index.column()).type) {
 
-            case itSignalStorageLink:
-              return item->data(index.column()).toBool() == true ? QIcon(":/signals/icons/ticklinear_106227.ico") : QIcon();
-              break;
-
-          case itStandRootIcon:
-//              pix.load(":/png16/icons/menu_editconfig_men_9554_32.png");
-            return QImage(":/my_icons/icons/018-tower.png");//.scaled(24, 24);
-            break;
-
-          case itDevicesRootIcon:
-            return QImage(":/my_icons/icons/002-cpu-1.png");//.scaled(24, 24);
-            break;
-
-          case itStoragesRootIcon:
-            return QImage(":/my_icons/icons/016-database.png");//.scaled(24, 24);
-              break;
-
-//            default:
+//            case itSignalStorageLink:
+//              return item->data(index.column()).toBool() == true ? QIcon(":/signals/icons/ticklinear_106227.ico") : QIcon();
 //              break;
+
+//          case itStandRootIcon:
+////              pix.load(":/png16/icons/menu_editconfig_men_9554_32.png");
+//            return QImage(":/my_icons/icons/018-tower.png");//.scaled(24, 24);
+//            break;
+
+//          case itDevicesRootIcon:
+//            return QImage(":/my_icons/icons/002-cpu-1.png");//.scaled(24, 24);
+//            break;
+
+//          case itStoragesRootIcon:
+//            return QImage(":/my_icons/icons/016-database.png");//.scaled(24, 24);
+//              break;
+
+////            default:
+////              break;
+////          }
 //          }
-          }
         break;
       }
 

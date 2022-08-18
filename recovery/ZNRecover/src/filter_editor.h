@@ -1,5 +1,5 @@
-﻿#ifndef TASK_EDITOR_H
-#define TASK_EDITOR_H
+﻿#ifndef FILTER_EDITOR_H
+#define FILTER_EDITOR_H
 
 #include <QDialog>
 #include <QString>
@@ -15,10 +15,10 @@
 //#include "zn_select_system_dialog.h"
 
 namespace Ui {
-  class TaskEditorDialog;
+  class FilterEditorDialog;
 }
 
-class TaskEditor : public QDialog
+class FilterEditor : public QDialog
 {
     Q_OBJECT
 
@@ -26,10 +26,10 @@ class TaskEditor : public QDialog
     enum Result { Accepted = QDialog::Accepted, Rejected = QDialog::Rejected, Error = -1 };
     enum ShowMode:bool { smNew = true, smEdit = false };
 
-    explicit TaskEditor(QWidget *parent, zn1::Filter* task = nullptr);
-    ~TaskEditor();
+    explicit FilterEditor(QWidget *parent, zn1::Filter* filter = nullptr);
+    ~FilterEditor();
 
-    zn1::Filter* task() { return &m_task; }
+    zn1::Filter* task() { return &m_filter; }
 
     QString lastError() { return m_last_error; }
 
@@ -48,12 +48,12 @@ private slots:
     void on_bnSelectSystem_clicked();
 
 private:
-    Ui::TaskEditorDialog *ui;
+    Ui::FilterEditorDialog *ui;
 
-    zn1::Filter m_task;
+    zn1::Filter m_filter;
 
     QString m_last_error = "";
 
 };
 
-#endif // TASK_EDITOR_H
+#endif // FILTER_EDITOR_H

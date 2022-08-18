@@ -1,23 +1,23 @@
-﻿#include "task_editor.h"
+﻿#include "filter_editor.h"
 
-TaskEditor::TaskEditor(QWidget *parent, zn1::Filter* task) :
+FilterEditor::FilterEditor(QWidget *parent, zn1::Filter* filter) :
   QDialog(parent),
-  ui(new Ui::TaskEditorDialog)
+  ui(new Ui::FilterEditorDialog)
 {
   ui->setupUi(this);
 
-  if(task) {
+  if(filter) {
 
-    ui->lineSystemName->setText(task->marker());
-    ui->dateTimeStart->setDateTime(task->begin());
-    ui->dateTimeEnd->setDateTime(task->end());
-    ui->lineSavePath->setText(task->path());
-    ui->lineFileName->setText(task->file_name());
+    ui->lineSystemName->setText(filter->marker());
+    ui->dateTimeStart->setDateTime(filter->begin());
+    ui->dateTimeEnd->setDateTime(filter->end());
+    ui->lineSavePath->setText(filter->path());
+    ui->lineFileName->setText(filter->file_name());
 
     setWindowTitle(QString("%1_%2_%3")
-                   .arg(task->marker())
-                   .arg(task->begin().toString(DEFAULT_DATETIME_FORMAT))
-                   .arg(task->end().toString(DEFAULT_DATETIME_FORMAT)));
+                   .arg(filter->marker())
+                   .arg(filter->begin().toString(DEFAULT_DATETIME_FORMAT))
+                   .arg(filter->end().toString(DEFAULT_DATETIME_FORMAT)));
 
     showMode = smEdit;
 
@@ -45,13 +45,13 @@ TaskEditor::TaskEditor(QWidget *parent, zn1::Filter* task) :
   this->show();
 }
 
-TaskEditor::~TaskEditor()
+FilterEditor::~FilterEditor()
 {
   close();
   delete ui;
 }
 
-void TaskEditor::accept()
+void FilterEditor::accept()
 {
   try {
 
@@ -76,22 +76,22 @@ void TaskEditor::accept()
       return;
     }
 
-    m_task.setId(QDateTime::currentMSecsSinceEpoch());
-    m_task.setMarker(ui->lineSystemName->text());
+    m_filter.setId(QDateTime::currentMSecsSinceEpoch());
+    m_filter.setMarker(ui->lineSystemName->text());
 
     //! отбрасываем миллисекунды, а то оператор == не работает для класса Interval
     QDateTime dt;
 
     dt.setDate(ui->dateTimeStart->date());
     dt.setTime(QTime(ui->dateTimeStart->time().hour(), ui->dateTimeStart->time().minute(), ui->dateTimeStart->time().second()));
-    m_task.setBegin(dt);
+    m_filter.setBegin(dt);
 
     dt.setDate(ui->dateTimeEnd->date());
     dt.setTime(QTime(ui->dateTimeEnd->time().hour(), ui->dateTimeEnd->time().minute(), ui->dateTimeEnd->time().second()));
-    m_task.setEnd(dt);
+    m_filter.setEnd(dt);
 
-    m_task.setPath(ui->lineSavePath->text());
-    m_task.setFileName(ui->lineFileName->text());
+    m_filter.setPath(ui->lineSavePath->text());
+    m_filter.setFileName(ui->lineFileName->text());
 
     QDialog::done(Accepted);
 
@@ -106,17 +106,17 @@ void TaskEditor::accept()
 }
 
 
-void TaskEditor::on_checkManualSystemName_toggled(bool checked)
+void FilterEditor::on_checkManualSystemName_toggled(bool checked)
 {
   ui->lineSystemName->setEnabled(checked);
 }
 
-void TaskEditor::on_checkManuaFileName_toggled(bool checked)
+void FilterEditor::on_checkManuaFileName_toggled(bool checked)
 {
   ui->lineFileName->setEnabled(checked);
 }
 
-void TaskEditor::on_bnSelectPath_clicked()
+void FilterEditor::on_bnSelectPath_clicked()
 {
   QString p = QFileDialog::getExistingDirectory(this, "Выбор каталога");
   if(p.isEmpty())
@@ -125,7 +125,7 @@ void TaskEditor::on_bnSelectPath_clicked()
   ui->lineSavePath->setText(p);
 }
 
-void TaskEditor::on_bnSelectSystem_clicked()
+void FilterEditor::on_bnSelectSystem_clicked()
 {
   ZNSystemSelectDialog* ssd = new ZNSystemSelectDialog(this, "config.json");
 

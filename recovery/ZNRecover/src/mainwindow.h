@@ -13,11 +13,13 @@
 
 #include "zn_select_dialog.h"
 #include "zn_reader.h"
-#include "task_editor.h"
+#include "filter_editor.h"
 #include "treemodel.h"
 #include "treeitem.h"
 
 #include "../../../../../job/svlib/SvWidgetLogger/1.1/sv_widget_logger.h"
+
+#define MAIN_TREE_HEADERS "<Система/Сигнал;|Начало;|Конец;<Описание"
 
 namespace Ui {
   class MainWindow;
@@ -73,7 +75,7 @@ private:
   bool saveConfig(QString& error);
   bool createDb(QString& error);
 
-  bool makeTree();
+  bool makeTree(const QString& filter_by_marker = QString());
 
   QLabel *lblStatus1 = nullptr;
   QLabel *lblStatus2 = nullptr;
