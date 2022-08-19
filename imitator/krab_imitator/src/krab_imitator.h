@@ -20,12 +20,12 @@ extern "C" {
 
     KRAB_IMITATOR_EXPORT modus::SvAbstractProtocol* create();
 
-
 }
 
 namespace apak {
 
   class SvKrabImitator: public modus::SvAbstractProtocol
+  // Класс, реализующий программный имитатор изделия КРАБ
   {
     Q_OBJECT
 
@@ -33,38 +33,50 @@ namespace apak {
     SvKrabImitator();
     ~SvKrabImitator();
 
+    // Эта функция вызывается серевером "mdserver" для всех имитаторов устройств.
+    // Её цель - инициализировать все структуры, необходимые нам для конкретного
+    // имитатора (в данном случае, имитатора КРАБ).
     bool configure(modus::DeviceConfig* config, modus::IOBuffer *iobuffer) override;
 
+    // Эта функция вызывается сервером "mdserver" для всех сигналов имитатора КРАБ.
+    // Её цель состоит в получении всех параметров для каждого сигнала и заполнинии в соответствии
+    // с ними структур данных (словари m_signal_by_bitNumberInDataField и
+    // m_bitNumberInSignal_by_bitNumberInDataField), необходимых для формирования пакета
+    // запроса на запись от КРАБ'а к АПАК.
     bool bindSignal(modus::SvSignal *signal, modus::SignalBinding binding) override;
 
 
   private:
+
+    // Cодержит параметр протокола обмена КРАБ с системой АПАК (период поступления
+    // данных в мс от КРАБ в систему АПАК).
     krab::ProtocolParams m_params;
 
-    // Битовый массив размером 66*8 битов, в котором формируется "поле данных"
-    //(длиной 66 байтов) запроса на запись от КРАБа к АПАК:
-    QBitArray m_bitsPacket;
+    // Битовый массив размером m_params.data_len*8 битов, в котором формируется "поле данных"
+    //(длиной m_params.data_len байтов) запроса на запись от КРАБа к АПАК:
+    QBitArray m_bitsDataField;
 
-    // Словарь, который каждому номеру бита (от 0 до 66*8-1) из битового массива
-    // "m_bitsPacket" ставит в соответствие сигнал, бит которого должен быть записан
-    // в массив "m_bitsPacket":
-    QMap<uint8_t, modus::SvSignal*> m_signal_by_bitNumberInPacket;
+    // Байтовый массив размером m_params.data_len байтов, в котором хранится "поле данных"
+    //(длиной m_params.data_len байтов) запроса на запись от КРАБа к АПАК:
+    QByteArray m_byteDataField;
 
-    // Словарь, который каждому номеру бита (от 0 до 66*8-1) из битового массива
-    // "m_bitsPacket" ставит в соответствие номер бита сигнала, который
-    // должен быть записан в массив "m_bitsPacket":
-    QMap<uint8_t, uint8_t> m_bitNumberInSignal_by_bitNumberInPacket;
+    // Пакет запроса на запись для передачи от КРАБ в систему АПАК в соответствии с протоколом обмена:
+    QByteArray m_send_data;
 
-    // Переменная, которая содержит количество байт в "поле данных" запроса на запись
-    // от Краба к АПАК. В данной версии протокола это значение - 66 байт. Предполагается внести
-    // этот параметр в конфигурационный json-файл для сервера, в раздел:
-    // "devices" -> "KRAB" -> "protokol" / "interface" -> "params".
-    quint16 m_max_byte;
+    // Словарь, который каждому номеру бита (от 0 до m_params.data_len*8-1) из битового массива
+    // "m_bitsDataField" ставит в соответствие сигнал, бит которого должен быть записан
+    // в массив "m_bitsDataField":
+    QMap<uint16_t, modus::SvSignal*> m_signal_by_bitNumberInDataField;
+
+    // Словарь, который каждому номеру бита (от 0 до m_params.data_len*8-1) из битового массива
+    // "m_bitsDataField", ставит в соответствие номер бита сигнала, который
+    // должен быть записан в массив "m_bitsDataField":
+    QMap<uint16_t, uint8_t> m_bitNumberInSignal_by_bitNumberInDataField;
 
     // Таймер, по таймауту которого, мы посылаем данные от имитатора КРАБ в систему АПАК.
-       QTimer* m_timer;
+    QTimer* m_timer;
 
-  public slots:
+   public slots:
     void signalUpdated(modus::SvSignal* signal) override;
     void signalChanged(modus::SvSignal* signal) override;
 
@@ -72,6 +84,10 @@ namespace apak {
     void start() override;
 
   private slots:
+
+    // В этой функции мы формируем и помещаем в массив байт m_send_data пакет для передачи от имитатора
+    // устройства КРАБ в систему АПАК (в соответствии с протоколом обмена) и инициируем передачу
+    // этого пакета от протокольной к интерфейcной части имитатора (для передачи по линии связи).
     void send();
   };
 }
