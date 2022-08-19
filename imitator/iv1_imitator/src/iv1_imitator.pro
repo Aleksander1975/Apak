@@ -22,7 +22,11 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # ссылок (undefined references) при сборке разделяемой библиотеки:
 QMAKE_LFLAGS += -Wno-unused-variable, -Wl,--no-undefined
 
-CONFIG (release) {
+# Для отключения отладочного вывода через qDebug() в release-версии:
+CONFIG (debug, debug|release){
+    message ("Debug")
+}else{
+    message ("Release")
     DEFINES += QT_NO_DEBUG_OUTPUT
 }
 
