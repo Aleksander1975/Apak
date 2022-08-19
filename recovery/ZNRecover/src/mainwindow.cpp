@@ -69,11 +69,39 @@ MainWindow::MainWindow(QWidget *parent) :
   _model = new TreeModel(QString(MAIN_TREE_HEADERS).split(';'), ui->treeViewFilters);
   ui->treeViewFilters->setModel(_model);
 
-  makeTree();
-
   ui->treeViewFilters->setColumnWidth(0, 300);
   ui->treeViewFilters->setColumnWidth(1, 130);
   ui->treeViewFilters->setColumnWidth(2, 130);
+
+
+  QSqlQuery q(m_db);
+
+  if(!q.exec(QString("select distinct marker "
+             "from outer_systems order by marker asc"))){
+
+    QMessageBox::critical(this, "Ошибка", q.lastError().text());
+    return;
+  }
+
+  // добавляем в список все системы, без повторов
+  ui->cbSystems->addItem("Все", QString());
+
+  while(q.next()) {
+
+    QString marker = q.value("marker").toString();
+    QString description = q.value("description").toString();
+
+    ui->cbSystems->addItem(QString("%1 %2").arg(marker).arg(description), marker);
+
+  }
+
+  q.finish();
+
+//  connect(ui->cbSystems, &QComboBox::currentIndexChanged, )
+//  makeTree();
+
+  ui->cbSystems->setCurrentIndex(0);
+
 
 }
 
@@ -593,7 +621,7 @@ void MainWindow::on_bnRemoveTask_clicked()
 */
 }
 
-bool MainWindow::makeTree(const QString& filter_by_marker)
+bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_signal, bool show_selected_only)
 {
   int column_count = 4; //_model->rootItem()->columnCount();
 
@@ -603,25 +631,22 @@ bool MainWindow::makeTree(const QString& filter_by_marker)
 
     QMap<QString, TreeItem*> fmap{};
 
+
     QSqlQuery q(m_db);
 
 
     if(!q.exec(QString("select distinct outer_systems.marker as marker, outer_systems.description as description "
                "from outer_systems "
-//               "left join outer_systems on filters.marker = outer_systems.marker "
+  //               "left join outer_systems on filters.marker = outer_systems.marker "
                "%1 "
-               "order by marker asc").arg(filter_by_marker.isEmpty() ? "" : QString("where marker = '%1'").arg(filter_by_marker))))
+               "order by marker asc").arg(filter_marker.isEmpty() ? "" : QString("where marker = '%1'").arg(filter_marker))))
       throw SvException(q.lastError().text());
 
-    // сначала добавляем в список и в root все системы, без повторов
-    ui->cbSystems->addItem("Все", QString());
-
+    // сначала добавляем в root список системы - все или заданную в filter_marker
     while(q.next()) {
 
       QString marker = q.value("marker").toString();
       QString description = q.value("description").toString();
-
-      ui->cbSystems->addItem(QString("%1 %2").arg(marker).arg(description), marker);
 
       TreeItem* s_item = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
       s_item->setData(0, marker);
@@ -630,7 +655,7 @@ bool MainWindow::makeTree(const QString& filter_by_marker)
       s_item->is_main_row = true;
       s_item->item_type = itSystem;
       for(int i = 0; i < column_count; i++) s_item->setInfo(i, ItemInfo());
-//      s_item->setInfo(0, ItemInfo(itDevicesRootIcon, ""));
+  //      s_item->setInfo(0, ItemInfo(itDevicesRootIcon, ""));
 
       fmap.insert(marker, s_item);
 
@@ -640,19 +665,28 @@ bool MainWindow::makeTree(const QString& filter_by_marker)
 
     // теперь добавляем в каждую систему фильтры - сигнал и временной интервал
 
+    // задаем нужные фильтры
+    QString where = QString("");
+
+    if(!filter_marker.isEmpty())
+      where = QString("where marker = '%1'").arg(filter_marker);
+
+    if(!filter_signal.isEmpty())
+      where.append(QString(" %1 signal = '%2'").arg(where.isEmpty() ? "where" : "and").arg(filter_signal));
+
+    if(!show_selected_only)
+      where.append(QString(" %1 filtered = %2").arg(where.isEmpty() ? "where" : "and").arg("true"));
+
     if(!q.exec(QString("select signals.marker as marker, "
                        "not (filters.begin is null or filters.end is null) as filtered, "
-//                       WHEN 'USA'
-//                           THEN 'Domestic'
-//                       ELSE 'Foreign'
-//                   END CustomerGroup"
-               "signals.name as signal, "
-               "signals.description as description, "
-               "filters.begin, filters.end "
-               "from signals  "
-               "left join filters on filters.signal = signals.name "
-               "%1"
-               "order by filtered desc, signal asc").arg(filter_by_marker.isEmpty() ? "" : QString("where marker = '%1'").arg(filter_by_marker))))
+                       "signals.name as signal, "
+                       "signals.description as description, "
+                       "filters.begin, "
+                       "filters.end "
+                       "from signals  "
+                       "left join filters on filters.signal = signals.name "
+                       "%1"
+                       "order by filtered desc, signal asc").arg(where)))
       throw SvException(q.lastError().text());
 
     while(q.next()) {
@@ -744,3 +778,15 @@ bool MainWindow::makeTree(const QString& filter_by_marker)
   return true;
 }
 */
+
+void MainWindow::on_cbSystems_currentIndexChanged(int index)
+{
+  QString marker = ui->cbSystems->itemData(index);
+
+  makeTree(marker);
+}
+
+void MainWindow::on_lineQuickSearch_returnPressed()
+{
+
+}

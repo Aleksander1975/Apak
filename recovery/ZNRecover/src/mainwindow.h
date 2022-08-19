@@ -75,7 +75,7 @@ private:
   bool saveConfig(QString& error);
   bool createDb(QString& error);
 
-  bool makeTree(const QString& filter_by_marker = QString());
+  bool makeTree(const QString& filter_marker = QString(), const QString& filter_signal = QString(), bool show_selected_only = false);
 
   QLabel *lblStatus1 = nullptr;
   QLabel *lblStatus2 = nullptr;
@@ -116,6 +116,8 @@ private slots:
   void on_bnEditTask_clicked();
 
   void on_bnRemoveTask_clicked();
+
+  void on_cbSystems_currentIndexChanged(int index);
 
   signals:
     void stop();
