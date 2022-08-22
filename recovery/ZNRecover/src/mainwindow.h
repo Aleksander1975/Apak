@@ -119,6 +119,10 @@ private slots:
 
   void on_cbSystems_currentIndexChanged(int index);
 
+  void on_lineQuickSearch_returnPressed();
+
+  void on_checkFilteredOnly_toggled(bool checked);
+
   signals:
     void stop();
 

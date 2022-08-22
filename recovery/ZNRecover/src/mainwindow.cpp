@@ -76,7 +76,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
   QSqlQuery q(m_db);
 
-  if(!q.exec(QString("select distinct marker "
+  if(!q.exec(QString("select distinct marker, description "
              "from outer_systems order by marker asc"))){
 
     QMessageBox::critical(this, "Ошибка", q.lastError().text());
@@ -635,11 +635,11 @@ bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_si
     QSqlQuery q(m_db);
 
 
-    if(!q.exec(QString("select distinct outer_systems.marker as marker, outer_systems.description as description "
+    if(!q.exec(QString("select distinct outer_systems.marker as marker , outer_systems.description as description "
                "from outer_systems "
   //               "left join outer_systems on filters.marker = outer_systems.marker "
                "%1 "
-               "order by marker asc").arg(filter_marker.isEmpty() ? "" : QString("where marker = '%1'").arg(filter_marker))))
+               "order by outer_systems.marker asc").arg(filter_marker.isEmpty() ? "" : QString("where marker = '%1'").arg(filter_marker))))
       throw SvException(q.lastError().text());
 
     // сначала добавляем в root список системы - все или заданную в filter_marker
@@ -669,14 +669,25 @@ bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_si
     QString where = QString("");
 
     if(!filter_marker.isEmpty())
-      where = QString("where marker = '%1'").arg(filter_marker);
+      where = QString("where marker = '%1' ").arg(filter_marker);
 
     if(!filter_signal.isEmpty())
-      where.append(QString(" %1 signal = '%2'").arg(where.isEmpty() ? "where" : "and").arg(filter_signal));
+      where.append(QString(" %1 signal like '\%%2\%' ").arg(where.isEmpty() ? "where" : "and").arg(filter_signal));
 
-    if(!show_selected_only)
-      where.append(QString(" %1 filtered = %2").arg(where.isEmpty() ? "where" : "and").arg("true"));
+    if(show_selected_only)
+      where.append(QString(" %1 filtered = %2").arg(where.isEmpty() ? "where" : "and").arg("1"));
+//qDebug() << where;
 
+//qDebug() << QString("select signals.marker as marker, "
+//                    "not (filters.begin is null or filters.end is null) as filtered, "
+//                    "signals.name as signal, "
+//                    "signals.description as description, "
+//                    "filters.begin, "
+//                    "filters.end "
+//                    "from signals  "
+//                    "left join filters on filters.signal = signals.name "
+//                    "%1 "
+//                    "order by filtered desc, signal asc").arg(where);
     if(!q.exec(QString("select signals.marker as marker, "
                        "not (filters.begin is null or filters.end is null) as filtered, "
                        "signals.name as signal, "
@@ -685,7 +696,7 @@ bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_si
                        "filters.end "
                        "from signals  "
                        "left join filters on filters.signal = signals.name "
-                       "%1"
+                       "%1 "
                        "order by filtered desc, signal asc").arg(where)))
       throw SvException(q.lastError().text());
 
@@ -781,12 +792,17 @@ bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_si
 
 void MainWindow::on_cbSystems_currentIndexChanged(int index)
 {
-  QString marker = ui->cbSystems->itemData(index);
+  QString marker = ui->cbSystems->itemData(index).toString();
 
   makeTree(marker);
 }
 
 void MainWindow::on_lineQuickSearch_returnPressed()
 {
+  makeTree(ui->cbSystems->currentData().toString(), ui->lineQuickSearch->text(), ui->checkFilteredOnly->checkState() == Qt::Checked);
+}
 
+void MainWindow::on_checkFilteredOnly_toggled(bool checked)
+{
+  makeTree(ui->cbSystems->currentData().toString(), ui->lineQuickSearch->text(), checked);
 }
