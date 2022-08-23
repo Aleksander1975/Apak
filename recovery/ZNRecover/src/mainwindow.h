@@ -16,6 +16,7 @@
 #include "filter_editor.h"
 #include "treemodel.h"
 #include "treeitem.h"
+#include "set_period_dialog.h"
 
 #include "../../../../../job/svlib/SvWidgetLogger/1.1/sv_widget_logger.h"
 
@@ -111,17 +112,21 @@ private slots:
 
   void backToBegin();
 
-  void on_bnAddTask_clicked();
-
-  void on_bnEditTask_clicked();
-
-  void on_bnRemoveTask_clicked();
-
   void on_cbSystems_currentIndexChanged(int index);
 
   void on_lineQuickSearch_returnPressed();
 
   void on_checkFilteredOnly_toggled(bool checked);
+
+  void on_treeViewFilters_clicked(const QModelIndex &index);
+
+  void on_bnDiscardQuickSearch_clicked();
+
+  void on_bnSaveAndContinue_clicked();
+
+  void on_treeViewFilters_doubleClicked(const QModelIndex &index);
+
+  void on_treeViewFilters_pressed(const QModelIndex &index);
 
   signals:
     void stop();

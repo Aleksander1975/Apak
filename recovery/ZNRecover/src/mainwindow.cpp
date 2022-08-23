@@ -12,6 +12,23 @@ MainWindow::MainWindow(QWidget *parent) :
 
   connect(ui->bnStart, &QPushButton::clicked, this, &MainWindow::start);
 
+  connect(ui->bnApplyQuickSearch, &QPushButton::clicked, this, &MainWindow::on_lineQuickSearch_returnPressed);
+
+  connect(ui->treeViewFilters, &QTreeView::clicked, [=](const QModelIndex& index)-> void{
+    TreeItem* item = _model->itemFromIndex(index);
+
+    bool enable = ((item->item_type == itSignal) || (item->item_type == itFilteredSignal));
+
+    ui->bnAddToFilter->setEnabled(enable);
+    ui->bnRemoveFromFilter->setEnabled(enable);
+  });
+
+//  connect(ui->bnAddToFilter, &QPushButton::clicked, []() -> {
+
+//    TreeItem* item = _model->itemFromIndex(ui->treeViewFilters->currentIndex());
+//    if(item->item_type == itSignal || item-> ) on_treeViewFilters_doubleClicked(ui->treeViewFilters->currentIndex());});
+
+
 //  ui->comboReadType->clear();
 //  ui->comboReadType->addItem("Все", QVariant("all"));
 //  ui->comboReadType->addItem("Выбранные задачи", QVariant("tasks"));
@@ -203,20 +220,21 @@ bool MainWindow::createDb(QString& error)
     if(!query.exec("create table outer_systems (marker varchar(20) primary key, "
                                     "lib varchar(255), "
                                     "description varchar(1000), "
-                                    "signals varchar(255))"))
+                                    "signals varchar(255)) "))
       throw SvException(query.lastError().text());
 
     if(!query.exec("create table signals (id int, "
                                     "marker varchar(20), "
                                     "name varchar(255) primary key, "
                                     "description varchar(1000), "
+                                    "description_for_search varchar(1000), "
                                     "params varchar(255))"))
        throw SvException(query.lastError().text());
 
     query.finish();
 
-    if(!query.exec("create table filters (marker varchar(20) primary key, "
-                                    "signal varchar(255), "
+    if(!query.exec("create table filters (marker varchar(20), "
+                                    "signal varchar(255) primary key, "
                                     "begin datetime default null, "
                                     "end  datetime default null)"))
       throw SvException(query.lastError().text());
@@ -236,11 +254,12 @@ bool MainWindow::createDb(QString& error)
 
       for(auto signal: system.signals_list) {
 
-        if(!query.exec(QString("insert into signals values(%1, '%2', '%3', '%4', '%5')")
+        if(!query.exec(QString("insert into signals values(%1, '%2', '%3', '%4', '%5', '%6')")
                    .arg(signal.id)
                    .arg(system.marker)
                    .arg(signal.name)
                    .arg(signal.description)
+                   .arg(signal.description.toLower())
                    .arg(signal.params)))
           throw SvException(query.lastError().text());
 
@@ -494,135 +513,11 @@ void MainWindow::backToBegin()
   ui->stackedWidget->setCurrentIndex(0);
 }
 
-void MainWindow::on_bnAddTask_clicked()
-{
-//  TaskEditor* te = new TaskEditor(this);
-
-//  switch (te->exec()) {
-
-//    case TaskEditor::Accepted:
-//    {
-//      QString error = QString();
-//      if(!addTask(te->task(), error))
-//        QMessageBox::critical(this, "Ошибка", error);
-
-//    }
-//    break;
-
-//    case TaskEditor::Error:
-
-//      QMessageBox::critical(this, "Ошибка", te->lastError());
-//      break;
-
-//    default:
-//      break;
-//  }
-
-//  delete te;
-}
-
-void MainWindow::on_bnEditTask_clicked()
-{
-/*
-  TaskEditor* te = nullptr;
-
-  try {
-  //  qDebug() << "curr row" <<  ui->tableWidget->currentRow();
-    if(ui->tableWidget->currentRow() < 0)
-      throw SvException("No rows. Nothing to edit");
-
-    int current_row = ui->tableWidget->currentRow();
-
-    bool ok;
-    qint64 current_task_id = ui->tableWidget->item(ui->tableWidget->currentItem()->row(), 0)->data(Qt::UserRole).toLongLong(&ok);
-    if(!ok)
-      throw SvException("Error on trying to determine task id from item data.");
-
-    if(!m_tasks.contains(current_task_id))
-      throw SvException("current task_id not found. on_bnEditTask_clicked");
-
-    zn1::Filter& current_task = m_tasks[current_task_id];
-
-    te = new TaskEditor(this, &current_task);
-
-    switch (te->exec()) {
-
-      case TaskEditor::Accepted:
-      {
-        foreach (auto task, m_tasks.values()) {
-
-          if(task.id() == current_task_id)
-            continue;
-
-          if(te->task()->save_path() == task.save_path())
-            throw SvException(QString("Такой путь для извлечения данных уже задан. Недопустимо указывать один путь для разных задач."));
-
-        }
-
-        ui->tableWidget->item(current_row, 0)->setText(te->task()->marker());
-        ui->tableWidget->item(current_row, 1)->setText(te->task()->begin().toString("dd.MM.yyyy hh:mm:ss"));
-        ui->tableWidget->item(current_row, 2)->setText(te->task()->end().toString("dd.MM.yyyy hh:mm:ss"));
-        ui->tableWidget->item(current_row, 3)->setText(te->task()->save_path());
-
-        current_task.setData(te->task()->marker(), te->task()->period(), te->task()->path(), te->task()->file_name());
-
-      }
-        break;
-
-      case TaskEditor::Error:
-
-        QMessageBox::critical(this, "Ошибка", te->lastError());
-        break;
-
-      default:
-        break;
-    }
-
-    delete te;
-
-
-  }
-  catch(SvException& e) {
-
-    QMessageBox::critical(this, "Error", e.error);
-
-    if(te)
-      delete te;
-
-  }
-  */
-}
-
-void MainWindow::on_bnRemoveTask_clicked()
-{
-/*  if(ui->tableWidget->currentRow() < 0)
-    return;
-
-  int current_row = ui->tableWidget->currentRow();
-
-  bool ok;
-  qint64 current_task_id = ui->tableWidget->item(ui->tableWidget->currentItem()->row(), 0)->data(Qt::UserRole).toLongLong(&ok);
-  if(!ok)
-    throw SvException("Error on trying to determine task id from item data.");
-
-  if(!m_tasks.contains(current_task_id))
-    throw SvException("current task_id not found. on_bnRemoveTask_clicked");
-
-  m_tasks.remove(current_task_id);
-
-
-  for (auto w: m_widget_items[current_task_id])
-    delete w;
-
-  m_widget_items[current_task_id].clear();
-  m_widget_items.remove(current_task_id);
-
-  ui->tableWidget->removeRow(current_row);
-*/
-}
-
 bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_signal, bool show_selected_only)
 {
+  ui->gbDataFilter->setEnabled(false);
+  qApp->processEvents();
+
   int column_count = 4; //_model->rootItem()->columnCount();
 
   try {
@@ -669,25 +564,18 @@ bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_si
     QString where = QString("");
 
     if(!filter_marker.isEmpty())
-      where = QString("where marker = '%1' ").arg(filter_marker);
+      where = QString("where signals.marker = '%1' ").arg(filter_marker);
 
     if(!filter_signal.isEmpty())
-      where.append(QString(" %1 signal like '\%%2\%' ").arg(where.isEmpty() ? "where" : "and").arg(filter_signal));
+      where.append(QString(" %1 lower(signals.name) like '\%%2\%' or signals.description_for_search like '\%%2\%' ")
+                   .arg(where.isEmpty() ? "where" : "and").arg(filter_signal.toLower()));
 
     if(show_selected_only)
       where.append(QString(" %1 filtered = %2").arg(where.isEmpty() ? "where" : "and").arg("1"));
-//qDebug() << where;
 
-//qDebug() << QString("select signals.marker as marker, "
-//                    "not (filters.begin is null or filters.end is null) as filtered, "
-//                    "signals.name as signal, "
-//                    "signals.description as description, "
-//                    "filters.begin, "
-//                    "filters.end "
-//                    "from signals  "
-//                    "left join filters on filters.signal = signals.name "
-//                    "%1 "
-//                    "order by filtered desc, signal asc").arg(where);
+    if(!q.exec(QString("pragma case_sensitive_like = 0")))
+      throw SvException(q.lastError().text());
+
     if(!q.exec(QString("select signals.marker as marker, "
                        "not (filters.begin is null or filters.end is null) as filtered, "
                        "signals.name as signal, "
@@ -718,12 +606,8 @@ bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_si
       filter_item->parent_index = parent_system->index;
       filter_item->is_main_row = false;
       filter_item->item_type = filtered ? itFilteredSignal : itSignal;
-//      for(int i = 0; i < column_count; i++) {
-
-        ItemInfo ii = filtered ? ItemInfo(itFilteredSignal, "signal", true, true) : ItemInfo(itSignal, "signal");
-
-        filter_item->setInfo(0, ii);
-//      }
+      ItemInfo ii = filtered ? ItemInfo(itFilteredSignal, "signal", true, true) : ItemInfo(itSignal, "signal");
+      filter_item->setInfo(0, ii);
 
       filter_item->setData(0, signal);
       filter_item->setData(1, begin);
@@ -735,6 +619,7 @@ bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_si
     ui->treeViewFilters->setModel(_model);
     ui->treeViewFilters->expandToDepth(1);
 
+    ui->gbDataFilter->setEnabled(true);
     return true;
 
   }
@@ -742,6 +627,7 @@ bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_si
   catch(SvException& e) {
 
     emit message(e.error, sv::log::llError, sv::log::mtCritical);
+    ui->gbDataFilter->setEnabled(true);
     return false;
 
   }
@@ -805,4 +691,78 @@ void MainWindow::on_lineQuickSearch_returnPressed()
 void MainWindow::on_checkFilteredOnly_toggled(bool checked)
 {
   makeTree(ui->cbSystems->currentData().toString(), ui->lineQuickSearch->text(), checked);
+}
+
+void MainWindow::on_treeViewFilters_clicked(const QModelIndex &index)
+{
+  ui->statusbar->showMessage(_model->itemFromIndex(index)->data(3).toString());
+}
+
+void MainWindow::on_bnDiscardQuickSearch_clicked()
+{
+  ui->lineQuickSearch->clear();
+  on_lineQuickSearch_returnPressed();
+}
+
+void MainWindow::on_bnSaveAndContinue_clicked()
+{
+
+}
+
+void MainWindow::on_treeViewFilters_doubleClicked(const QModelIndex &index)
+{
+  TreeItem* item = _model->itemFromIndex(index);
+
+  if(item->item_type != itSignal && item->item_type != itFilteredSignal)
+    return;
+
+  SetPeriodDialog* spd = new SetPeriodDialog();
+
+  try {
+
+    if(spd->exec() == QDialog::Accepted) {
+
+
+
+      QSqlQuery q(m_db);
+
+      if(!q.exec(QString("delete from filters where signal = '%1'").arg(item->data(0).toString())))
+        throw SvException(q.lastError().text());
+
+      q.finish();
+
+      if(!q.exec(QString("insert into filters values('%1', '%2', '%3', '%4')")
+                 .arg(item->parent()->data(0).toString())
+                 .arg(item->data(0).toString())
+                 .arg(spd->begin().toString("yyyy-MM-dd hh:mm:ss"))
+                 .arg(spd->end().toString("yyyy-MM-dd hh:mm:ss"))))
+        throw SvException(q.lastError().text());
+
+      q.finish();
+
+      item->setInfo(0, ItemInfo(itFilteredSignal, "signal", true, true));
+      item->setData(1, spd->begin());
+      item->setData(2, spd->end());
+
+      ui->treeViewFilters->repaint();
+
+    }
+
+    delete spd;
+
+  }
+
+  catch(SvException& e) {
+
+    QMessageBox::critical(this, "Error", e.error);
+
+    delete spd;
+
+
+  }
+}
+
+void MainWindow::on_treeViewFilters_pressed(const QModelIndex &index)
+{
+
 }

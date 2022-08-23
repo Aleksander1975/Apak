@@ -794,7 +794,7 @@
        <widget class="QWidget" name="page_3">
         <layout class="QVBoxLayout" name="verticalLayout_14">
          <item>
-          <widget class="QGroupBox" name="gbZNParams_3">
+          <widget class="QGroupBox" name="gbDataFilter">
            <property name="font">
             <font>
              <weight>75</weight>
@@ -804,22 +804,7 @@
            <property name="title">
             <string>Фильтр данных</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_12">
-            <property name="spacing">
-             <number>2</number>
-            </property>
-            <property name="leftMargin">
-             <number>2</number>
-            </property>
-            <property name="topMargin">
-             <number>2</number>
-            </property>
-            <property name="rightMargin">
-             <number>2</number>
-            </property>
-            <property name="bottomMargin">
-             <number>2</number>
-            </property>
+           <layout class="QVBoxLayout" name="verticalLayout_10">
             <item>
              <widget class="QFrame" name="frame_2">
               <property name="frameShape">
@@ -828,21 +813,21 @@
               <property name="frameShadow">
                <enum>QFrame::Raised</enum>
               </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <layout class="QHBoxLayout" name="horizontalLayout_13">
                <property name="spacing">
-                <number>1</number>
+                <number>2</number>
                </property>
                <property name="leftMargin">
-                <number>1</number>
+                <number>2</number>
                </property>
                <property name="topMargin">
-                <number>1</number>
+                <number>2</number>
                </property>
                <property name="rightMargin">
-                <number>1</number>
+                <number>2</number>
                </property>
                <property name="bottomMargin">
-                <number>1</number>
+                <number>2</number>
                </property>
                <item>
                 <widget class="QLabel" name="label_9">
@@ -888,16 +873,67 @@
                  </property>
                 </spacer>
                </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="frame_3">
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_5">
+               <property name="spacing">
+                <number>2</number>
+               </property>
+               <property name="leftMargin">
+                <number>2</number>
+               </property>
+               <property name="topMargin">
+                <number>2</number>
+               </property>
+               <property name="bottomMargin">
+                <number>2</number>
+               </property>
                <item>
-                <widget class="QCheckBox" name="checkFilteredOnly">
-                 <property name="font">
-                  <font>
-                   <weight>50</weight>
-                   <bold>false</bold>
-                  </font>
+                <widget class="QPushButton" name="bnAddToFilter">
+                 <property name="minimumSize">
+                  <size>
+                   <width>24</width>
+                   <height>24</height>
+                  </size>
                  </property>
                  <property name="text">
-                  <string>Только выбранные</string>
+                  <string/>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../res/res.qrc">
+                   <normaloff>:/main/add.ico</normaloff>:/main/add.ico</iconset>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="bnRemoveFromFilter">
+                 <property name="minimumSize">
+                  <size>
+                   <width>24</width>
+                   <height>24</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../res/res.qrc">
+                   <normaloff>:/main/cross.ico</normaloff>:/main/cross.ico</iconset>
+                 </property>
+                 <property name="flat">
+                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
@@ -908,14 +944,14 @@
                  </property>
                  <property name="sizeHint" stdset="0">
                   <size>
-                   <width>40</width>
+                   <width>482</width>
                    <height>20</height>
                   </size>
                  </property>
                 </spacer>
                </item>
                <item>
-                <widget class="QLabel" name="label_10">
+                <widget class="QCheckBox" name="checkFilteredOnly">
                  <property name="font">
                   <font>
                    <weight>50</weight>
@@ -923,12 +959,9 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>Быстрый поиск</string>
+                  <string>Отображать только выбранные</string>
                  </property>
                 </widget>
-               </item>
-               <item>
-                <widget class="QLineEdit" name="lineQuickSearch"/>
                </item>
               </layout>
              </widget>
@@ -956,17 +989,52 @@
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="lblSignalDescription">
-              <property name="font">
-               <font>
-                <weight>50</weight>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>TextLabel</string>
-              </property>
-             </widget>
+             <layout class="QHBoxLayout" name="horizontalLayout_12">
+              <item>
+               <widget class="QLabel" name="label_11">
+                <property name="font">
+                 <font>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Быстрый поиск</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="lineQuickSearch"/>
+              </item>
+              <item>
+               <widget class="QPushButton" name="bnApplyQuickSearch">
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset resource="../res/res.qrc">
+                  <normaloff>:/main/check_blue.ico</normaloff>:/main/check_blue.ico</iconset>
+                </property>
+                <property name="flat">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="bnDiscardQuickSearch">
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset resource="../res/res.qrc">
+                  <normaloff>:/main/cross.ico</normaloff>:/main/cross.ico</iconset>
+                </property>
+                <property name="flat">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
            </layout>
           </widget>

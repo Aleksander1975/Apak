@@ -23,7 +23,8 @@ SOURCES += main.cpp\
     ../../../../../job/Modus/global/signal/sv_signal.cpp \
     zn_picker.cpp \
     treemodel.cpp \
-    treeitem.cpp
+    treeitem.cpp \
+    set_period_dialog.cpp
 
 HEADERS  += mainwindow.h \
     zn_reader.h \
@@ -37,10 +38,12 @@ HEADERS  += mainwindow.h \
     zn_picker.h \
     treemodel.h \
     treeitem.h \
-    database.h
+    database.h \
+    set_period_dialog.h
 
 FORMS    += mainwindow.ui \
-    select_zn_dialog.ui
+    select_zn_dialog.ui \
+    set_period_dialog.ui
 
 RESOURCES += \
     ../res/res.qrc
