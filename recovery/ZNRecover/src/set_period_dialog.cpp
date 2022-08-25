@@ -7,8 +7,8 @@ SetPeriodDialog::SetPeriodDialog(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &SetPeriodDialog::accept);
-  connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+//  connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &SetPeriodDialog::accept);
+//  connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
 }
 

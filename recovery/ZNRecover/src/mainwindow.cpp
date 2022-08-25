@@ -7,6 +7,9 @@ MainWindow::MainWindow(QWidget *parent) :
 {
   ui->setupUi(this);
 
+  setWindowTitle(QString("Восстановление данных защищенного накопителяv.%1").arg(APP_VERSION));
+  setWindowIcon(QIcon(":/main/hard-drive-network3.ico"));
+
   connect(ui->bnBackToBegin1, &QPushButton::clicked, this, &MainWindow::backToBegin);
   connect(ui->bnBackToBegin2, &QPushButton::clicked, this, &MainWindow::backToBegin);
 
@@ -76,6 +79,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
 //  lblStatus1->setText(QString("Сегмент: %1").arg(11));
 //  lblStatus2->setText(QString("Общий: %1").arg(222));
+
+  AppParams::loadLayout(this);
 
   if(!createDb(error)) {
 
@@ -200,6 +205,8 @@ MainWindow::~MainWindow()
     QMessageBox::critical(this, "Ошибка", error);
 
   delete m_logger;
+
+  AppParams::saveLayout(this);
 
   delete ui;
 }
@@ -704,11 +711,6 @@ void MainWindow::on_bnDiscardQuickSearch_clicked()
   on_lineQuickSearch_returnPressed();
 }
 
-void MainWindow::on_bnSaveAndContinue_clicked()
-{
-
-}
-
 void MainWindow::on_treeViewFilters_doubleClicked(const QModelIndex &index)
 {
   TreeItem* item = _model->itemFromIndex(index);
@@ -765,4 +767,31 @@ void MainWindow::on_treeViewFilters_doubleClicked(const QModelIndex &index)
 void MainWindow::on_treeViewFilters_pressed(const QModelIndex &index)
 {
 
+}
+
+void MainWindow::on_bnPickData_clicked()
+{
+  QSqlQuery q(m_db);
+
+  try {
+
+    if(!q.exec(QString("select filters.marker m, min(filters.begin) b, max(filters.end) e "
+                       "from filters group by marker")))
+      throw SvException(q.lastError().text());
+
+    while(q.next()) {
+
+      qDebug() << q.value("m").toString() << q.value("b").toString() << q.value("e").toString();
+    }
+
+    q.finish();
+
+
+  }
+  catch(SvException& e) {
+
+    q.finish();
+    QMessageBox::critical(this, "Error", e.error);
+
+  }
 }

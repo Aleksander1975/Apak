@@ -18,6 +18,8 @@
 #include "treeitem.h"
 #include "set_period_dialog.h"
 
+#include "../../../../svlib/SvSettings/1.0/sv_settings.h"
+
 #include "../../../../../job/svlib/SvWidgetLogger/1.1/sv_widget_logger.h"
 
 #define MAIN_TREE_HEADERS "<Система/Сигнал;|Начало;|Конец;<Описание"
@@ -122,11 +124,11 @@ private slots:
 
   void on_bnDiscardQuickSearch_clicked();
 
-  void on_bnSaveAndContinue_clicked();
-
   void on_treeViewFilters_doubleClicked(const QModelIndex &index);
 
   void on_treeViewFilters_pressed(const QModelIndex &index);
+
+  void on_bnPickData_clicked();
 
   signals:
     void stop();

@@ -13,6 +13,9 @@ TEMPLATE = app
 
 CONFIG += c++11
 
+VERSION = 1.0.0    # major.minor.patch
+DEFINES += APP_VERSION=\\\"$$VERSION\\\"
+
 SOURCES += main.cpp\
         mainwindow.cpp \
     zn_reader.cpp \
@@ -24,7 +27,8 @@ SOURCES += main.cpp\
     zn_picker.cpp \
     treemodel.cpp \
     treeitem.cpp \
-    set_period_dialog.cpp
+    set_period_dialog.cpp \
+    ../../../../svlib/SvSettings/1.0/sv_settings.cpp
 
 HEADERS  += mainwindow.h \
     zn_reader.h \
@@ -39,7 +43,8 @@ HEADERS  += mainwindow.h \
     treemodel.h \
     treeitem.h \
     database.h \
-    set_period_dialog.h
+    set_period_dialog.h \
+    ../../../../svlib/SvSettings/1.0/sv_settings.h
 
 FORMS    += mainwindow.ui \
     select_zn_dialog.ui \
