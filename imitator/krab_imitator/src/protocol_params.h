@@ -335,8 +335,8 @@ namespace krab {
       QJsonObject j;
 
       j.insert(BYTE,  QJsonValue(byte).toInt());
-      j.insert(OFFSET,  QJsonValue(byte).toInt());
-      j.insert(LEN,  QJsonValue(byte).toInt());
+      j.insert(OFFSET,  QJsonValue(offset).toInt());
+      j.insert(LEN,  QJsonValue(len).toInt());
       return j;
 
     }
