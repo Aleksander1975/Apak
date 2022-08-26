@@ -17,6 +17,7 @@
 #include "treemodel.h"
 #include "treeitem.h"
 #include "set_period_dialog.h"
+#include "zn_picker.h"
 
 #include "../../../../svlib/SvSettings/1.0/sv_settings.h"
 
@@ -63,16 +64,23 @@ public:
   ~MainWindow();
 
 private:
-  Ui::MainWindow *ui;
+  Ui::MainWindow*           ui;
 
-  zn1::ZNReader*        m_reader = nullptr;
-//  QThread*              m_thread = nullptr;
-  sv::SvWidgetLogger*   m_logger = nullptr;
+  zn1::ZNReader*            m_reader = nullptr;
+  zn1::ZNPicker*            m_picker = nullptr;
 
-  zn1::RecoveryConfig   m_config;
-  QString               m_config_file_name;
+  sv::SvWidgetLogger*       m_logger = nullptr;
 
-  QSqlDatabase m_db;
+  zn1::RecoveryConfig       m_config;
+  QString                   m_config_file_name;
+
+  QSqlDatabase              m_db;
+
+  LoadState                 l_state = Stopped;
+
+  QMap<qint64, zn1::Filter> m_tasks;
+
+  TreeModel*                m_model = nullptr;
 
   bool loadConfig(QString& error);
   bool saveConfig(QString& error);
@@ -80,24 +88,13 @@ private:
 
   bool makeTree(const QString& filter_marker = QString(), const QString& filter_signal = QString(), bool show_selected_only = false);
 
-  QLabel *lblStatus1 = nullptr;
-  QLabel *lblStatus2 = nullptr;
-
-  LoadState l_state = Stopped;
-
-  QMap<qint64, zn1::Filter>             m_tasks;
-
-  TreeModel* _model = nullptr;
-
-
-
 private slots:
   void message(const QString msg, int level = sv::log::llDebug, int type  = sv::log::mtDebug);
 //  void setProgressZoneSize(int size);
 //  void setCurrentProgress(int size);
   void setStatusBarText(const QString& text);
 
-  void start();
+  void loadData();
 
   void on_bnSelectFile_clicked();
 

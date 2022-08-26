@@ -24,11 +24,11 @@ SOURCES += main.cpp\
     ../../../../../job/svlib/Network/Tcp/Client/1.0/sv_tcp_client.cpp \
     zn_select_dialog.cpp \
     ../../../../../job/Modus/global/signal/sv_signal.cpp \
-    zn_picker.cpp \
     treemodel.cpp \
     treeitem.cpp \
     set_period_dialog.cpp \
-    ../../../../svlib/SvSettings/1.0/sv_settings.cpp
+    ../../../../svlib/SvSettings/1.0/sv_settings.cpp \
+    coarse_data_picker.cpp
 
 HEADERS  += mainwindow.h \
     zn_reader.h \
@@ -39,12 +39,12 @@ HEADERS  += mainwindow.h \
     zn_select_dialog.h \
     ../../recovery_defs.h \
     ../../../../../job/Modus/global/signal/sv_signal.h \
-    zn_picker.h \
     treemodel.h \
     treeitem.h \
     database.h \
     set_period_dialog.h \
-    ../../../../svlib/SvSettings/1.0/sv_settings.h
+    ../../../../svlib/SvSettings/1.0/sv_settings.h \
+    coarse_data_picker.h
 
 FORMS    += mainwindow.ui \
     select_zn_dialog.ui \

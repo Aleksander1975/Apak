@@ -13,12 +13,12 @@ MainWindow::MainWindow(QWidget *parent) :
   connect(ui->bnBackToBegin1, &QPushButton::clicked, this, &MainWindow::backToBegin);
   connect(ui->bnBackToBegin2, &QPushButton::clicked, this, &MainWindow::backToBegin);
 
-  connect(ui->bnStart, &QPushButton::clicked, this, &MainWindow::start);
+  connect(ui->bnLoadData, &QPushButton::clicked, this, &MainWindow::loadData);
 
   connect(ui->bnApplyQuickSearch, &QPushButton::clicked, this, &MainWindow::on_lineQuickSearch_returnPressed);
 
   connect(ui->treeViewFilters, &QTreeView::clicked, [=](const QModelIndex& index)-> void{
-    TreeItem* item = _model->itemFromIndex(index);
+    TreeItem* item = m_model->itemFromIndex(index);
 
     bool enable = ((item->item_type == itSignal) || (item->item_type == itFilteredSignal));
 
@@ -88,8 +88,8 @@ MainWindow::MainWindow(QWidget *parent) :
     return;
   }
 
-  _model = new TreeModel(QString(MAIN_TREE_HEADERS).split(';'), ui->treeViewFilters);
-  ui->treeViewFilters->setModel(_model);
+  m_model = new TreeModel(QString(MAIN_TREE_HEADERS).split(';'), ui->treeViewFilters);
+  ui->treeViewFilters->setModel(m_model);
 
   ui->treeViewFilters->setColumnWidth(0, 300);
   ui->treeViewFilters->setColumnWidth(1, 130);
@@ -339,7 +339,7 @@ bool MainWindow::createDb(QString& error)
     ui->spinZNZoneSize->setEnabled(checked && !ui->checkRequestZoneSize->isChecked());
 }*/
 
-void MainWindow::start()
+void MainWindow::loadData()
 {
   if(l_state == Started) {
 
@@ -529,7 +529,7 @@ bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_si
 
   try {
 
-    _model->clear();
+    m_model->clear();
 
     QMap<QString, TreeItem*> fmap{};
 
@@ -550,10 +550,10 @@ bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_si
       QString marker = q.value("marker").toString();
       QString description = q.value("description").toString();
 
-      TreeItem* s_item = _model->rootItem()->insertChildren(_model->rootItem()->childCount(), 1, column_count);
+      TreeItem* s_item = m_model->rootItem()->insertChildren(m_model->rootItem()->childCount(), 1, column_count);
       s_item->setData(0, marker);
       s_item->setData(3, description);
-      s_item->parent_index = _model->rootItem()->index;
+      s_item->parent_index = m_model->rootItem()->index;
       s_item->is_main_row = true;
       s_item->item_type = itSystem;
       for(int i = 0; i < column_count; i++) s_item->setInfo(i, ItemInfo());
@@ -623,7 +623,7 @@ bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_si
 
     }
 
-    ui->treeViewFilters->setModel(_model);
+    ui->treeViewFilters->setModel(m_model);
     ui->treeViewFilters->expandToDepth(1);
 
     ui->gbDataFilter->setEnabled(true);
@@ -702,7 +702,7 @@ void MainWindow::on_checkFilteredOnly_toggled(bool checked)
 
 void MainWindow::on_treeViewFilters_clicked(const QModelIndex &index)
 {
-  ui->statusbar->showMessage(_model->itemFromIndex(index)->data(3).toString());
+  ui->statusbar->showMessage(m_model->itemFromIndex(index)->data(3).toString());
 }
 
 void MainWindow::on_bnDiscardQuickSearch_clicked()
@@ -713,7 +713,7 @@ void MainWindow::on_bnDiscardQuickSearch_clicked()
 
 void MainWindow::on_treeViewFilters_doubleClicked(const QModelIndex &index)
 {
-  TreeItem* item = _model->itemFromIndex(index);
+  TreeItem* item = m_model->itemFromIndex(index);
 
   if(item->item_type != itSignal && item->item_type != itFilteredSignal)
     return;
@@ -775,16 +775,50 @@ void MainWindow::on_bnPickData_clicked()
 
   try {
 
-    if(!q.exec(QString("select filters.marker m, min(filters.begin) b, max(filters.end) e "
+    // сохраняем текущие заданные фильтры
+    if(!q.exec(QString("select filters.marker marker, min(filters.begin) begin, max(filters.end) end "
                        "from filters group by marker")))
       throw SvException(q.lastError().text());
 
+
+    QList<zn1::CoarseFilter> cf{};
     while(q.next()) {
 
-      qDebug() << q.value("m").toString() << q.value("b").toString() << q.value("e").toString();
+//      qDebug() << q.value("m").toString() << q.value("b").toString() << q.value("e").toString();
+
+      QString   marker  = q.value("marker").toString();
+      QDateTime begin   = q.value("begin").toDateTime();
+      QDateTime end     = q.value("end").toDateTime();
+
+      cf.append(zn1::CoarseFilter(marker, begin, end));
+
     }
 
     q.finish();
+
+    //! создаем объект-экстрактор
+    m_picker = new zn1::CoarseDataPicker();
+
+    if(!m_picker->configure(m_config, cf)) {
+
+      QMessageBox::critical(this, "Ошибка", m_picker->lastError());
+      return;
+    }
+
+    connect(m_picker, &zn1::CoarseDataPicker::started,  this,                &MainWindow::setButtonsStateStarted);
+    connect(m_picker, &zn1::CoarseDataPicker::finished, this,                &MainWindow::setButtonsStateStopped);
+    connect(m_picker, &zn1::CoarseDataPicker::message,  this,                &MainWindow::message);
+
+    connect(this,     &MainWindow::stop,      m_picker,            &zn1::CoarseDataPicker::stop);
+
+    connect(m_picker, &zn1::CoarseDataPicker::finished, m_picker,            &zn1::CoarseDataPicker::deleteLater);
+
+    connect(m_picker, &zn1::CoarseDataPicker::read_progress,ui->progressBar, &QProgressBar::setValue);
+    connect(m_picker, &zn1::CoarseDataPicker::find_progress,this,            &MainWindow::find_progress);
+
+    connect(m_picker, &zn1::CoarseDataPicker::current_position, this, [=](qint64 position)-> void { ui->lineCurrentPos->setText(QString::number(position)); });
+
+    m_picker->start();
 
 
   }

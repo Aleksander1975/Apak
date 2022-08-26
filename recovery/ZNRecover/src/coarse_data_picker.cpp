@@ -1,41 +1,31 @@
-﻿#include "zn_picker.h"
+﻿#include "coarse_data_picker.h"
 
-zn1::ZNPicker::ZNPicker()
+zn1::CoarseDataPicker::CoarseDataPicker()
 {
 
 }
 
-bool zn1::ZNPicker::configure(const QString& json)
+bool zn1::CoarseDataPicker::configure(zn1::RecoveryConfig& config, const QList<CoarseFilter> coarseFilters) // const QString& json)
 {
-  QFile f(json);
-
   try {
 
-    if(!f.open(QIODevice::ReadOnly))
-      throw SvException(f.errorString());
-
-    QJsonParseError jerr;
-    QJsonDocument jd = QJsonDocument::fromJson(f.readAll(), &jerr);
-
-    if(jerr.error != QJsonParseError::NoError)
-      throw SvException(jerr.errorString());
-
-    m_config = zn1::RecoveryConfig::fromJsonObject(jd.object());
+    m_config = config;
+    m_coarse_filters = coarseFilters;
 
     return true;
 
   }
   catch(SvException& e) {
 
-    if(f.isOpen())
-      f.close();
+//    if(f.isOpen())
+//      f.close();
 
     m_last_error = e.error;
     return false;
   }
 }
 
-void zn1::ZNPicker::run()
+void zn1::CoarseDataPicker::run()
 {
   //! чтение данных
   m_is_running = true;
@@ -148,21 +138,21 @@ void zn1::ZNPicker::run()
         }
 
         // ищем, есть ли задача, которая соответствует прочитанным данным
-        for(zn1::Filter& task: m_config.pickerParams.filters) {
+        for(zn1::CoarseFilter& coarse_filter: m_coarse_filters) {
 
-          if(task.period().contains(r.dateTime()) && task.marker_hash() == r.marker_hash()) {
+          if(coarse_filter.period().contains(r.dateTime()) && coarse_filter.marker_hash() == r.marker_hash()) {
 
 //            emit message(QString("Найдено соответствие %1 %2 в позиции %3")
 //                         .arg(QDateTime::fromMSecsSinceEpoch(r.dateTime()).toString(DEFAULT_DATETIME_FORMAT))
 //                         .arg(r.marker()).arg(pos), sv::log::llDebug, sv::log::mtInfo);
 
             // пытаемся открыть нужный файл для записи
-            QFile* f = dstfiles.value(task.save_path(), nullptr);
+            QFile* f = dstfiles.value(coarse_filter.save_path(), nullptr);
 
             if(!f) {
 
-              f = new QFile(task.save_path());
-              dstfiles.insert(task.save_path(), f);
+              f = new QFile(coarse_filter.save_path(m_config.data_dir));
+              dstfiles.insert(coarse_filter.save_path(), f);
 
             }
 
@@ -170,9 +160,9 @@ void zn1::ZNPicker::run()
 
               if(!f->open(QIODevice::WriteOnly))
                 throw SvException(QString("Ошибка при попытке открыть файл для записи: %1/n%2")
-                                  .arg(f->errorString()).arg(task.save_path()));
+                                  .arg(f->errorString()).arg(coarse_filter.save_path()));
 
-              f->write(ZNRHeader(task.marker(), task.begin().toString(DEFAULT_DATETIME_FORMAT), task.end().toString(DEFAULT_DATETIME_FORMAT)).toByteArray());
+              f->write(ZNRHeader(coarse_filter.marker(), coarse_filter.begin().toString(DEFAULT_DATETIME_FORMAT), coarse_filter.end().toString(DEFAULT_DATETIME_FORMAT)).toByteArray());
 
 //              f->write(task.marker().toStdString().c_str(), task.marker().length());
 //              f->write('\0');
@@ -236,7 +226,7 @@ void zn1::ZNPicker::run()
 
 }
 
-void zn1::ZNPicker::stop()
+void zn1::CoarseDataPicker::stop()
 {
   m_is_running = false;
 }

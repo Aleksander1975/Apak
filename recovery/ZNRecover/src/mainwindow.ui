@@ -784,7 +784,7 @@
             </spacer>
            </item>
            <item>
-            <widget class="QPushButton" name="bnStart">
+            <widget class="QPushButton" name="bnLoadData">
              <property name="text">
               <string>Загрузить</string>
              </property>

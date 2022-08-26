@@ -15,7 +15,7 @@
 #define P_READER                  "reader"
 #define P_PICKER                  "picker"
 #define P_CHART                   "chart"
-//#define P_DISPLAY                 "display"
+#define P_DATA_DIR                "data_dir"
 #define P_SYSTEMS                 "systems"
 #define P_ZN_DATA_FILE            "zn_data_file"
 #define P_TASKS                   "tasks"
@@ -48,7 +48,7 @@
 #define DEFAULT_MARKER_TEMPLATE   "[MARKER]"
 #define DEFAULT_BEGIN_TEMPLATE    "[BEGIN]"
 #define DEFAULT_END_TEMPLATE      "[END]"
-
+#define DEFAULT_DATA_DIR          "./data"
 #define DEFAULT_FILE_NAME_TEMPLATE DEFAULT_MARKER_TEMPLATE "_" DEFAULT_BEGIN_TEMPLATE "_" DEFAULT_END_TEMPLATE ".znr"
 
 const int     SIGLEN                 = 7;
@@ -109,10 +109,96 @@ namespace zn1 {
 
   };
 
-  class Filter {
+  class CoarseFilter {
+
+    public:
+      CoarseFilter():
+        m_marker(QString()),
+        m_begin(QDateTime::currentDateTime()),
+        m_end(QDateTime::currentDateTime())
+      { }
+
+      CoarseFilter(const QString& marker, QDateTime begin, QDateTime end):
+        m_marker(marker),
+        m_begin(begin),
+        m_end(end)
+      {
+        m_period.setData(begin, end);
+      }
+
+      CoarseFilter& operator=(const CoarseFilter& other)
+      {
+        if(this == &other)
+          return *this;
+
+        m_marker  = other.m_marker;
+        m_begin   = other.m_begin;
+        m_end     = other.m_end;
+        m_period.setData(m_begin, m_end);
+
+        return *this;
+      }
+
+      uint                marker_hash()       { return qHash(m_marker); }
+      const QString       marker()      const { return m_marker;        }
+      const QDateTime     begin()       const { return m_begin;         }
+      const QDateTime     end()         const { return m_end;           }
+      const FilterPeriod& period()      const { return m_period;        }
+
+      QString   save_path(const QString& data_dir = DEFAULT_DATA_DIR)
+      {
+        QString path      = data_dir;
+        QString file_name = DEFAULT_FILE_NAME_TEMPLATE;
+
+        return QDir(path.replace(DEFAULT_MARKER_TEMPLATE,  m_marker, Qt::CaseInsensitive)).filePath(file_name
+                                                                    .replace(DEFAULT_MARKER_TEMPLATE, m_marker, Qt::CaseInsensitive)
+                                                                    .replace(DEFAULT_BEGIN_TEMPLATE,  m_begin.toString("ddMMyyyy-hhmmss"), Qt::CaseInsensitive)
+                                                                    .replace(DEFAULT_END_TEMPLATE,    m_end.toString("ddMMyyyy-hhmmss"), Qt::CaseInsensitive)
+                                                                  .append(file_name.endsWith(".znr") ? "" : ".znr"));
+      }
+
+      void setBegin(QDateTime begin)
+      {
+        m_begin   = begin;
+        m_period  = FilterPeriod(m_begin, m_end);
+      }
+
+      void setEnd(QDateTime end)
+      {
+        m_end     = end;
+        m_period  = FilterPeriod(m_begin, m_end);
+      }
+
+      void setPeriod(QDateTime begin, QDateTime end)
+      {
+        m_begin   = begin;
+        m_end     = end;
+        m_period  = FilterPeriod(m_begin, m_end);
+      }
+
+      void setPeriod(FilterPeriod period)
+      {
+        setPeriod(period.begin(), period.end());
+      }
+
+      void setMarker(const QString& marker)
+      {
+        m_marker    = marker;
+      }
+
+    private:
+
+      QString       m_marker;
+      QDateTime     m_begin;
+      QDateTime     m_end;
+      FilterPeriod  m_period;
+
+  };
+
+  class FineFilter {
 
   public:
-    Filter():
+    FineFilter():
       m_id(0),
       m_marker(QString()),
       m_begin(QDateTime::currentDateTime()),
@@ -123,7 +209,7 @@ namespace zn1 {
       m_period.setData(m_begin, m_end);
     }
 
-    Filter(Filter* filter):
+    FineFilter(FineFilter* filter):
       m_id(filter->id()),
       m_marker(filter->marker()),
       m_begin(filter->begin()),
@@ -134,7 +220,7 @@ namespace zn1 {
       m_period.setData(m_begin, m_end);
     }
 
-    Filter& operator=(const Filter& other)
+    FineFilter& operator=(const FineFilter& other)
     {
       if(this == &other)
         return *this;
@@ -440,9 +526,9 @@ namespace zn1 {
 
   struct PickerParams {
 
-    qint64          start_byte      = 0;
+    qint64            start_byte  = 0;
 
-    QList<Filter>  filters     = QList<Filter>();
+    QList<FineFilter> filters     = QList<FineFilter>();
 
     static PickerParams fromJsonString(const QString& json_string) //throw (SvException)
     {
@@ -496,7 +582,7 @@ namespace zn1 {
               continue;
 
             QJsonObject to = t.toObject();
-            Filter filter = Filter{};
+            FineFilter filter = FineFilter{};
 
             // task id
             P = P_ID;
@@ -509,7 +595,7 @@ namespace zn1 {
                                    .arg(P).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact)))
                                    .arg("Идентификатор задачи должен быть задан целым положительным числом"));
 
-              for(zn1::Filter task: p.filters) {
+              for(zn1::FineFilter task: p.filters) {
 
                 if(task.id() == id)
                   throw SvException(QString(IMPERMISSIBLE_VALUE)
@@ -641,7 +727,7 @@ namespace zn1 {
       p.insert(P_START_BYTE,     QJsonValue(start_byte));
 
       QJsonArray f;
-      for(const Filter& filter: filters) {
+      for(const FineFilter& filter: filters) {
 
         QJsonObject t;
 
@@ -874,6 +960,7 @@ namespace zn1 {
 
     sv::log::Level  log_level     = sv::log::llInfo;
     QString         zn_data_file  = QString();
+    QString         data_dir      = DEFAULT_DATA_DIR;
 
     QList<OuterSystem> outer_systems       = QList<OuterSystem>();
 
@@ -902,6 +989,16 @@ namespace zn1 {
         throw SvException(QString("Неверная конфигурация json. Раздел \"%1\" отсутствует или не является объектом").arg(P_PARAMS));
 
       QJsonObject global = object.value(P_GLOBAL).toObject();
+
+      // data_dir
+      P = P_DATA_DIR;
+      if(global.contains(P)) {
+
+        p.data_dir = global.value(P).toString();
+
+      }
+      else
+        p.data_dir = DEFAULT_DATA_DIR;
 
       // zn_data_file
       P = P_ZN_DATA_FILE;
@@ -1061,6 +1158,7 @@ namespace zn1 {
 
       QJsonObject global;
 
+      global.insert(P_DATA_DIR,     QJsonValue(data_dir));
       global.insert(P_ZN_DATA_FILE, QJsonValue(zn_data_file));
       global.insert(P_LOG_LEVEL,    QJsonValue(sv::log::levelToString(log_level)));
       global.insert(P_SYSTEMS,      QJsonValue(as));

@@ -26,10 +26,10 @@ class FilterEditor : public QDialog
     enum Result { Accepted = QDialog::Accepted, Rejected = QDialog::Rejected, Error = -1 };
     enum ShowMode:bool { smNew = true, smEdit = false };
 
-    explicit FilterEditor(QWidget *parent, zn1::Filter* filter = nullptr);
+    explicit FilterEditor(QWidget *parent, zn1::FineFilter* filter = nullptr);
     ~FilterEditor();
 
-    zn1::Filter* task() { return &m_filter; }
+    zn1::FineFilter* task() { return &m_filter; }
 
     QString lastError() { return m_last_error; }
 
@@ -50,7 +50,7 @@ private slots:
 private:
     Ui::FilterEditorDialog *ui;
 
-    zn1::Filter m_filter;
+    zn1::FineFilter m_filter;
 
     QString m_last_error = "";
 
