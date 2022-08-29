@@ -34,7 +34,6 @@ void zn1::CoarseDataPicker::run()
 
   QHash<QString, QFile*> dstfiles;
 
-
   try {
 
     QFileInfo fi = QFileInfo(srcfile);
@@ -210,7 +209,8 @@ void zn1::CoarseDataPicker::run()
   }
   catch(SvException& e) {
 
-    emit message(e.error, sv::log::llError, sv::log::mtError);
+    emit message(QString("Не удалось открыть файл с исходными данными: %1").arg(e.error),
+                 sv::log::llError, sv::log::mtCritical);
   }
 
   for(QFile* file: dstfiles.values()) {

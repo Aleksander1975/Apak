@@ -65,7 +65,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
   m_logger = new sv::SvWidgetLogger{logopt, ui->textLog};
 
-  setButtonsStateStopped();
+  setReadStateStopped();
 
   ui->textLog->document()->setMaximumBlockCount(2000);
 
@@ -341,12 +341,12 @@ bool MainWindow::createDb(QString& error)
 
 void MainWindow::loadData()
 {
-  if(l_state == Started) {
+  if(l_read_state == Started) {
 
     emit stop();
 
   }
-  else if (l_state == Stopped) {
+  else if (l_read_state == Stopped) {
 
     ui->progressBar->setValue(0);
 
@@ -383,8 +383,8 @@ void MainWindow::loadData()
       return;
     }
 
-    connect(m_reader, &zn1::ZNReader::started,  this,             &MainWindow::setButtonsStateStarted);
-    connect(m_reader, &zn1::ZNReader::finished, this,             &MainWindow::setButtonsStateStopped);
+    connect(m_reader, &zn1::ZNReader::started,  this,             &MainWindow::setReadStateStarted);
+    connect(m_reader, &zn1::ZNReader::finished, this,             &MainWindow::setReadStateStopped);
     connect(m_reader, &zn1::ZNReader::message,  this,             &MainWindow::message);
 
     connect(this,     &MainWindow::stop,        m_reader,         &zn1::ZNReader::stop);
@@ -407,32 +407,32 @@ void MainWindow::loadData()
   }
 }
 
-void MainWindow::setButtonsStateStarted()
+void MainWindow::setReadStateStarted()
 {
-  ui->gbZNParams->setEnabled(false);
+  ui->gbDataFilter->setEnabled(false);
   ui->bnBackToBegin1->setEnabled(false);
   ui->bnToStep3->setEnabled(false);
 
   ui->progressBar->setVisible(true);
 
-  ui->bnStart->setText("Отмена");
+  ui->bnPickData->setText("Отмена");
 
-  l_state = Started;
+  l_read_state = Started;
 
 //  qApp->processEvents();
 }
 
-void MainWindow::setButtonsStateStopped()
+void MainWindow::setReadStateStopped()
 {
-  ui->gbZNParams->setEnabled(true);
+  ui->gbDataFilter->setEnabled(true);
   ui->bnBackToBegin1->setEnabled(true);
   ui->bnToStep3->setEnabled(true);
 
   ui->progressBar->setVisible(false);
 
-  ui->bnStart->setText("Загрузить");
+  ui->bnLoadData->setText("Загрузить");
 
-  l_state = Stopped;
+  l_read_state = Stopped;
 
 //  qApp->processEvents();
 }
@@ -508,8 +508,12 @@ void MainWindow::on_bnToNextStep_clicked()
   if(ui->radioLoadData->isChecked())
     ui->stackedWidget->setCurrentIndex(1);
 
-  else if(ui->radioDoNotLoad->isChecked())
+  else if(ui->radioDoNotLoad->isChecked()) {
+
+    m_config.zn_data_file = ui->lineSaveFilePath->text();
     ui->stackedWidget->setCurrentIndex(2);
+
+  }
 
   else
   {}
@@ -796,29 +800,32 @@ void MainWindow::on_bnPickData_clicked()
 
     q.finish();
 
-    //! создаем объект-экстрактор
-    m_picker = new zn1::CoarseDataPicker();
+    //! создаем объект для грубого извлечения данных
+    //! т.е. вытаскиваем записи, ктоорые попадают в заданный временной диапазон, без разбора сигналов
+    m_coarse_picker = new zn1::CoarseDataPicker();
 
-    if(!m_picker->configure(m_config, cf)) {
+    if(!m_coarse_picker->configure(m_config, cf)) {
 
-      QMessageBox::critical(this, "Ошибка", m_picker->lastError());
+      QMessageBox::critical(this, "Ошибка", m_coarse_picker->lastError());
       return;
     }
 
-    connect(m_picker, &zn1::CoarseDataPicker::started,  this,                &MainWindow::setButtonsStateStarted);
-    connect(m_picker, &zn1::CoarseDataPicker::finished, this,                &MainWindow::setButtonsStateStopped);
-    connect(m_picker, &zn1::CoarseDataPicker::message,  this,                &MainWindow::message);
+    connect(m_coarse_picker, &zn1::CoarseDataPicker::started,  this,                &MainWindow::setPickStateStarted);
+    connect(m_coarse_picker, &zn1::CoarseDataPicker::finished, this,                &MainWindow::setPickStateStopped);
+    connect(m_coarse_picker, &zn1::CoarseDataPicker::message,  this,                &MainWindow::message);
 
-    connect(this,     &MainWindow::stop,      m_picker,            &zn1::CoarseDataPicker::stop);
+    connect(this,     &MainWindow::stop,      m_coarse_picker,                      &zn1::CoarseDataPicker::stop);
 
-    connect(m_picker, &zn1::CoarseDataPicker::finished, m_picker,            &zn1::CoarseDataPicker::deleteLater);
+    connect(m_coarse_picker, &zn1::CoarseDataPicker::finished, m_coarse_picker,     &zn1::CoarseDataPicker::deleteLater);
 
-    connect(m_picker, &zn1::CoarseDataPicker::read_progress,ui->progressBar, &QProgressBar::setValue);
-    connect(m_picker, &zn1::CoarseDataPicker::find_progress,this,            &MainWindow::find_progress);
+    connect(m_coarse_picker, &zn1::CoarseDataPicker::read_progress,ui->progressPick, &QProgressBar::setValue);
+    connect(m_coarse_picker, &zn1::CoarseDataPicker::find_progress,this,
+            [=](int count)->void { ui->statusbar->showMessage(QString("Найдено соответствий: %1").arg(count)); } );
 
-    connect(m_picker, &zn1::CoarseDataPicker::current_position, this, [=](qint64 position)-> void { ui->lineCurrentPos->setText(QString::number(position)); });
+    //    connect(m_coarse_picker, &zn1::CoarseDataPicker::current_position, this,
+//            [=](qint64 position)-> void { ui->lineCurrentPos->setText(QString::number(position)); });
 
-    m_picker->start();
+    m_coarse_picker->start();
 
 
   }
@@ -828,4 +835,78 @@ void MainWindow::on_bnPickData_clicked()
     QMessageBox::critical(this, "Error", e.error);
 
   }
+}
+
+void MainWindow::setPickStateStarted()
+{
+  ui->gbDataFilter->setEnabled(false);
+  ui->bnBackToBegin2->setEnabled(false);
+//  ui->bnToStep3->setEnabled(false);
+
+  ui->progressPick->setVisible(true);
+
+  ui->bnPickData->setText("Отмена");
+
+  l_pick_state = Started;
+
+//  qApp->processEvents();
+}
+
+void MainWindow::setPickStateStopped()
+{
+  ui->gbDataFilter->setEnabled(true);
+  ui->bnBackToBegin2->setEnabled(true);
+//  ui->bnToStep3->setEnabled(true);
+
+  ui->progressPick->setVisible(false);
+
+  ui->bnPickData->setText("Применить");
+
+  l_pick_state = Stopped;
+
+//  qApp->processEvents();
+}
+
+void MainWindow::on_bnEdit_clicked()
+{
+  ui->lineZNIP->setEnabled(true);
+  ui->spinZNPort->setEnabled(true);
+  ui->lineZNZoneName->setEnabled(true);
+  ui->cbZoneSizeMode->setEnabled(true);
+}
+
+void MainWindow::on_bnAcceptChanges_clicked()
+{
+  if(QHostAddress(ui->lineZNIP->text()).isNull()) {
+
+    message("Неверный ip адрес", sv::log::llError, sv::log::mtCritical);
+    return;
+  }
+
+  if(ui->lineZNZoneName->text().isEmpty()) {
+
+    message("Не задано имя зоны", sv::log::llError, sv::log::mtCritical);
+    return;
+  }
+
+  m_config.readerParams.host = QHostAddress(ui->lineZNIP->text());
+  m_config.readerParams.port = ui->spinZNPort->value();
+  m_config.readerParams.zone = ui->lineZNZoneName->text();
+  m_config.readerParams.ask_zone_size = ui->cbZoneSizeMode->currentIndex() == 0;
+
+
+  ui->bnAcceptChanges->setEnabled(false);
+  ui->bnCancelChanges->setEnabled(false);
+
+}
+
+void MainWindow::on_bnCancelChanges_clicked()
+{
+  ui->lineZNIP->setText(m_config.readerParams.host.toString());
+  ui->spinZNPort->setValue(m_config.readerParams.port);
+  ui->lineZNZoneName->setText(m_config.readerParams.zone);
+  ui->cbZoneSizeMode->setCurrentIndex(m_config.readerParams.ask_zone_size ? 0 : 1);
+
+  ui->bnAcceptChanges->setEnabled(false);
+  ui->bnCancelChanges->setEnabled(false);
 }

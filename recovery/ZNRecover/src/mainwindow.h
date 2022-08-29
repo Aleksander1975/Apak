@@ -17,7 +17,7 @@
 #include "treemodel.h"
 #include "treeitem.h"
 #include "set_period_dialog.h"
-#include "zn_picker.h"
+#include "coarse_data_picker.h"
 
 #include "../../../../svlib/SvSettings/1.0/sv_settings.h"
 
@@ -29,7 +29,7 @@ namespace Ui {
   class MainWindow;
 }
 
-enum LoadState {
+enum ActionState {
   Stopped,
   Started
 };
@@ -67,7 +67,7 @@ private:
   Ui::MainWindow*           ui;
 
   zn1::ZNReader*            m_reader = nullptr;
-  zn1::ZNPicker*            m_picker = nullptr;
+  zn1::CoarseDataPicker*    m_coarse_picker = nullptr;
 
   sv::SvWidgetLogger*       m_logger = nullptr;
 
@@ -76,9 +76,10 @@ private:
 
   QSqlDatabase              m_db;
 
-  LoadState                 l_state = Stopped;
+  ActionState               l_read_state = Stopped;
+  ActionState               l_pick_state = Stopped;
 
-  QMap<qint64, zn1::Filter> m_tasks;
+  QMap<qint64, zn1::FineFilter> m_tasks;
 
   TreeModel*                m_model = nullptr;
 
@@ -98,8 +99,11 @@ private slots:
 
   void on_bnSelectFile_clicked();
 
-  void setButtonsStateStarted();
-  void setButtonsStateStopped();
+  void setReadStateStarted();
+  void setReadStateStopped();
+
+  void setPickStateStarted();
+  void setPickStateStopped();
 
   void on_radioLoadData_toggled(bool checked);
 
@@ -126,6 +130,12 @@ private slots:
   void on_treeViewFilters_pressed(const QModelIndex &index);
 
   void on_bnPickData_clicked();
+
+  void on_bnEdit_clicked();
+
+  void on_bnAcceptChanges_clicked();
+
+  void on_bnCancelChanges_clicked();
 
   signals:
     void stop();
