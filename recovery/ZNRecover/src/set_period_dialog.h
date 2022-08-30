@@ -15,6 +15,8 @@ class SetPeriodDialog : public QDialog
 
   public:
     explicit SetPeriodDialog(QWidget *parent = 0);
+    explicit SetPeriodDialog(QDateTime begin = QDateTime(), QDateTime end = QDateTime());
+
     ~SetPeriodDialog();
 
     QDateTime begin() { return m_begin; }

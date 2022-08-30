@@ -12,6 +12,26 @@ SetPeriodDialog::SetPeriodDialog(QWidget *parent) :
 
 }
 
+SetPeriodDialog::SetPeriodDialog(QDateTime begin, QDateTime end) :
+  ui(new Ui::SetPeriodDialog),
+  m_begin(begin),
+  m_end(end)
+{
+  ui->setupUi(this);
+
+  if(m_begin.isValid()) {
+
+    ui->dateBegin->setDate(m_begin.date());
+    ui->timeBegin->setTime(m_begin.time());
+  }
+
+  if(m_end.isValid()) {
+
+    ui->dateEnd->setDate(m_end.date());
+    ui->timeEnd->setTime(m_end.time());
+  }
+}
+
 SetPeriodDialog::~SetPeriodDialog()
 {
   delete ui;

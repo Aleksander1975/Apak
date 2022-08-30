@@ -18,7 +18,7 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="page_1">
        <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -771,7 +771,7 @@
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="bnLoadData">
+           <widget class="QPushButton" name="bnReadData">
             <property name="text">
              <string>Загрузить</string>
             </property>
@@ -878,6 +878,18 @@
            </item>
            <item>
             <widget class="QFrame" name="frame_3">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>38</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>38</height>
+              </size>
+             </property>
              <property name="frameShape">
               <enum>QFrame::StyledPanel</enum>
              </property>
@@ -898,11 +910,17 @@
                <number>2</number>
               </property>
               <item>
-               <widget class="QPushButton" name="bnAddToFilter">
+               <widget class="QPushButton" name="bnChangeFilter">
                 <property name="minimumSize">
                  <size>
-                  <width>24</width>
-                  <height>24</height>
+                  <width>32</width>
+                  <height>32</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>32</width>
+                  <height>32</height>
                  </size>
                 </property>
                 <property name="text">
@@ -910,7 +928,13 @@
                 </property>
                 <property name="icon">
                  <iconset resource="../res/res.qrc">
-                  <normaloff>:/main/add.ico</normaloff>:/main/add.ico</iconset>
+                  <normaloff>:/main/synchronize.ico</normaloff>:/main/synchronize.ico</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>24</width>
+                  <height>24</height>
+                 </size>
                 </property>
                 <property name="flat">
                  <bool>true</bool>
@@ -921,8 +945,14 @@
                <widget class="QPushButton" name="bnRemoveFromFilter">
                 <property name="minimumSize">
                  <size>
-                  <width>24</width>
-                  <height>24</height>
+                  <width>32</width>
+                  <height>32</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>32</width>
+                  <height>32</height>
                  </size>
                 </property>
                 <property name="text">
@@ -931,6 +961,12 @@
                 <property name="icon">
                  <iconset resource="../res/res.qrc">
                   <normaloff>:/main/cross.ico</normaloff>:/main/cross.ico</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>24</width>
+                  <height>24</height>
+                 </size>
                 </property>
                 <property name="flat">
                  <bool>true</bool>

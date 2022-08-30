@@ -91,6 +91,9 @@ while(m_is_running) {
 
     msleep(1000);
     qDebug() << 4 * cnt;
+
+    if(readed_total >= 0xA00000)
+      break;
   }
 
 /*

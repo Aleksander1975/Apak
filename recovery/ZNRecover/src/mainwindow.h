@@ -76,16 +76,20 @@ private:
 
   QSqlDatabase              m_db;
 
-  ActionState               l_read_state = Stopped;
-  ActionState               l_pick_state = Stopped;
+  ActionState               m_read_state = Stopped;
+  ActionState               m_pick_state = Stopped;
 
   QMap<qint64, zn1::FineFilter> m_tasks;
 
   TreeModel*                m_model = nullptr;
 
+  QDateTime                 m_filter_last_begin = QDateTime();
+  QDateTime                 m_filter_last_end   = QDateTime();
+
   bool loadConfig(QString& error);
   bool saveConfig(QString& error);
   bool createDb(QString& error);
+  void updateFilters() ;
 
   bool makeTree(const QString& filter_marker = QString(), const QString& filter_signal = QString(), bool show_selected_only = false);
 
@@ -95,7 +99,7 @@ private slots:
 //  void setCurrentProgress(int size);
   void setStatusBarText(const QString& text);
 
-  void loadData();
+  void readData();
 
   void on_bnSelectFile_clicked();
 
@@ -104,6 +108,8 @@ private slots:
 
   void setPickStateStarted();
   void setPickStateStopped();
+
+  void changeFilter(const QModelIndex& index);
 
   void on_radioLoadData_toggled(bool checked);
 
@@ -137,8 +143,13 @@ private slots:
 
   void on_bnCancelChanges_clicked();
 
+  void on_bnToStep3_clicked();
+
+  void on_bnChangeFilter_clicked();
+
   signals:
-    void stop();
+    void stopReading();
+    void stopPicking();
 
 
 };

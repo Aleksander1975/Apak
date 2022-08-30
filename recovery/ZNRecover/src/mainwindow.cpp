@@ -13,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
   connect(ui->bnBackToBegin1, &QPushButton::clicked, this, &MainWindow::backToBegin);
   connect(ui->bnBackToBegin2, &QPushButton::clicked, this, &MainWindow::backToBegin);
 
-  connect(ui->bnLoadData, &QPushButton::clicked, this, &MainWindow::loadData);
+  connect(ui->bnReadData, &QPushButton::clicked, this, &MainWindow::readData);
 
   connect(ui->bnApplyQuickSearch, &QPushButton::clicked, this, &MainWindow::on_lineQuickSearch_returnPressed);
 
@@ -22,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     bool enable = ((item->item_type == itSignal) || (item->item_type == itFilteredSignal));
 
-    ui->bnAddToFilter->setEnabled(enable);
+    ui->bnChangeFilter->setEnabled(enable);
     ui->bnRemoveFromFilter->setEnabled(enable);
   });
 
@@ -339,191 +339,6 @@ bool MainWindow::createDb(QString& error)
     ui->spinZNZoneSize->setEnabled(checked && !ui->checkRequestZoneSize->isChecked());
 }*/
 
-void MainWindow::loadData()
-{
-  if(l_read_state == Started) {
-
-    emit stop();
-
-  }
-  else if (l_read_state == Stopped) {
-
-    ui->progressBar->setValue(0);
-
-    if(ui->lineSaveFilePath->text().isEmpty()) {
-
-      QMessageBox::critical(this, "Ошибка", "Укажите файл, в который будут сохраняться данные");
-      return;
-    }
-
-    // формируем и сохраняем json файл конфигурации
-    QString error;
-    if(!saveConfig(error)) {
-
-      QMessageBox::critical(this, "Ошибка", error);
-      return;
-    }
-
-    bool ok;
-    QString pass = QInputDialog::getText(this, tr("Авторизация для чтения данных"),
-                                         tr("Введите пароль:"), QLineEdit::Normal,
-                                         "QWERTY", &ok);
-    if (!ok || pass.isEmpty()) {
-
-      QMessageBox::critical(this, "Ошибка", "Не указан пароль. Продолжение операции невозможно.");
-      return;
-    }
-
-    //! создаем объект-читатель
-    m_reader = new zn1::ZNReader();
-
-    if(!m_reader->configure(m_config, pass)) {
-
-      QMessageBox::critical(this, "Ошибка", m_reader->lastError());
-      return;
-    }
-
-    connect(m_reader, &zn1::ZNReader::started,  this,             &MainWindow::setReadStateStarted);
-    connect(m_reader, &zn1::ZNReader::finished, this,             &MainWindow::setReadStateStopped);
-    connect(m_reader, &zn1::ZNReader::message,  this,             &MainWindow::message);
-
-    connect(this,     &MainWindow::stop,        m_reader,         &zn1::ZNReader::stop);
-  //  connect(m_reader, &zn1::ZNReader::finished, m_reader,         &zn1::ZNReader::quit);
-
-    connect(m_reader, &zn1::ZNReader::finished, m_reader,         &zn1::ZNReader::deleteLater);
-
-    connect(m_reader, &zn1::ZNReader::zonesize, ui->progressBar,  &QProgressBar::setMaximum);
-    connect(m_reader, &zn1::ZNReader::total,   ui->progressBar,   &QProgressBar::setValue);
-
-  //  connect(m_reader, &zn1::ZNReader::partsize, ui->progressBarPart, &QProgressBar::setMaximum);
-  //  connect(m_reader, &zn1::ZNReader::parted,   ui->progressBarPart, &QProgressBar::setValue);
-
-//    connect(m_reader, &zn1::ZNReader::total, this, &MainWindow::setProgressZoneSize);
-//    connect(m_reader, &zn1::ZNReader::parted, this, &MainWindow::setCurrentProgress);
-    connect(m_reader, &zn1::ZNReader::loaded, this, &MainWindow::setStatusBarText);
-
-    m_reader->start();
-
-  }
-}
-
-void MainWindow::setReadStateStarted()
-{
-  ui->gbDataFilter->setEnabled(false);
-  ui->bnBackToBegin1->setEnabled(false);
-  ui->bnToStep3->setEnabled(false);
-
-  ui->progressBar->setVisible(true);
-
-  ui->bnPickData->setText("Отмена");
-
-  l_read_state = Started;
-
-//  qApp->processEvents();
-}
-
-void MainWindow::setReadStateStopped()
-{
-  ui->gbDataFilter->setEnabled(true);
-  ui->bnBackToBegin1->setEnabled(true);
-  ui->bnToStep3->setEnabled(true);
-
-  ui->progressBar->setVisible(false);
-
-  ui->bnLoadData->setText("Загрузить");
-
-  l_read_state = Stopped;
-
-//  qApp->processEvents();
-}
-
-/*void MainWindow::setProgressZoneSize(int size)
-{
-//  qDebug() << 10 << size;
-//  statusTip().
-//  reinterpret_cast<QLabel*>(statusBar()->children().at(0))->setText(QString("Общий: %1 Мб").arg(size));
-//  lblStatus1->setText("dsdsd"); // QString("Общий: %1 Мб").arg(size));
-  qDebug() << 11;
-//  qApp->processEvents();
-}*/
-
-void MainWindow::setStatusBarText(const QString& text)
-{
-  statusBar()->showMessage(text);
-}
-
-/*void MainWindow::setCurrentProgress(int size)
-{
-  ui->label_5->setText(QString("Сегмент: %1 Мб").arg(size));
-  qDebug() << 12;
-//  qApp->processEvents();
-}*/
-
-void MainWindow::on_bnSelectFile_clicked()
-{
-  QString full_file_name = QFileDialog::getSaveFileName(this, "Выберите файл для сохранения данных", QString(), "ZN Data (*.zndata);;Все файлы (*.*)");
-
-  if(!full_file_name.isEmpty())
-    ui->lineSaveFilePath->setText(full_file_name.endsWith(".zndata") ? full_file_name : QString("%1.zndata").arg(full_file_name));
-
-}
-
-/*void MainWindow::on_bnStop_clicked()
-{
-  emit stop();
-}*/
-
-void MainWindow::message(const QString msg, int level, int type)
-{
-  if(m_logger && level <= m_logger->options().level)
-    *m_logger << sv::log::TimeZZZ
-              << sv::log::Level(level)
-              << sv::log::MessageTypes(type)
-              << msg
-              << sv::log::endl;
-}
-
-/*void MainWindow::on_checkRequestZoneSize_toggled(bool checked)
-{
-  ui->spinZNZoneSize->setEnabled(!checked && ui->checkManualZNEdit->isChecked());
-}*/
-
-void MainWindow::on_radioLoadData_toggled(bool checked)
-{
-  ui->bnToNextStep->setEnabled(checked && !ui->lineSaveFilePath->text().isEmpty());
-}
-
-void MainWindow::on_radioDoNotLoad_toggled(bool checked)
-{
-  ui->bnToNextStep->setEnabled(checked && !ui->lineSaveFilePath->text().isEmpty());
-}
-
-void MainWindow::on_radioTraining_toggled(bool checked)
-{
-  ui->bnToNextStep->setEnabled(checked && !ui->lineSaveFilePath->text().isEmpty());
-}
-
-void MainWindow::on_bnToNextStep_clicked()
-{
-  if(ui->radioLoadData->isChecked())
-    ui->stackedWidget->setCurrentIndex(1);
-
-  else if(ui->radioDoNotLoad->isChecked()) {
-
-    m_config.zn_data_file = ui->lineSaveFilePath->text();
-    ui->stackedWidget->setCurrentIndex(2);
-
-  }
-
-  else
-  {}
-}
-
-void MainWindow::backToBegin()
-{
-  ui->stackedWidget->setCurrentIndex(0);
-}
-
 bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_signal, bool show_selected_only)
 {
   ui->gbDataFilter->setEnabled(false);
@@ -645,226 +460,204 @@ bool MainWindow::makeTree(const QString& filter_marker, const QString& filter_si
 
 }
 
-/*bool MainWindow::addTask(zn1::Filter* newtask, QString& error)
+void MainWindow::readData()
 {
-  for(auto& task: m_tasks) {
+  if(m_read_state == Started) {
 
-    if(task.save_path() == newtask->save_path()) {
-
-      error = QString("Невозможно добавить задачу. Указанный путь для сохранения уже задан");
-      return false;
-    }
-  }
-
-
-
-//  ui->treeViewFilters->
-
-  ui->tableWidget->insertRow(ui->tableWidget->rowCount());
-  int row = ui->tableWidget->rowCount() - 1;
-
-  m_widget_items.insert(newtask->id(), QList<QTableWidgetItem*>());
-
-//  m_widget_items[row].append(new QTableWidgetItem(newtask->id()));
-//  ui->tableWidget->setItem(row, 0, m_widget_items[row].last());
-
-  m_widget_items[newtask->id()].append(new QTableWidgetItem(newtask->marker()));
-  ui->tableWidget->setItem(row, 0, m_widget_items[newtask->id()].last());
-  m_widget_items[newtask->id()].last()->setData(Qt::UserRole, newtask->id());
-
-  m_widget_items[newtask->id()].append(new QTableWidgetItem(newtask->begin().toString("dd.MM.yyyy hh:mm:ss")));
-  ui->tableWidget->setItem(row, 1, m_widget_items[newtask->id()].last());
-
-  m_widget_items[newtask->id()].append(new QTableWidgetItem(newtask->end().toString("dd.MM.yyyy hh:mm:ss")));
-  ui->tableWidget->setItem(row, 2, m_widget_items[newtask->id()].last());
-
-  m_widget_items[newtask->id()].append(new QTableWidgetItem(newtask->save_path()));
-  ui->tableWidget->setItem(row, 3, m_widget_items[newtask->id()].last());
-
-  m_tasks.insert(newtask->id(), zn1::Filter(newtask));
-
-  return true;
-}
-*/
-
-void MainWindow::on_cbSystems_currentIndexChanged(int index)
-{
-  QString marker = ui->cbSystems->itemData(index).toString();
-
-  makeTree(marker);
-}
-
-void MainWindow::on_lineQuickSearch_returnPressed()
-{
-  makeTree(ui->cbSystems->currentData().toString(), ui->lineQuickSearch->text(), ui->checkFilteredOnly->checkState() == Qt::Checked);
-}
-
-void MainWindow::on_checkFilteredOnly_toggled(bool checked)
-{
-  makeTree(ui->cbSystems->currentData().toString(), ui->lineQuickSearch->text(), checked);
-}
-
-void MainWindow::on_treeViewFilters_clicked(const QModelIndex &index)
-{
-  ui->statusbar->showMessage(m_model->itemFromIndex(index)->data(3).toString());
-}
-
-void MainWindow::on_bnDiscardQuickSearch_clicked()
-{
-  ui->lineQuickSearch->clear();
-  on_lineQuickSearch_returnPressed();
-}
-
-void MainWindow::on_treeViewFilters_doubleClicked(const QModelIndex &index)
-{
-  TreeItem* item = m_model->itemFromIndex(index);
-
-  if(item->item_type != itSignal && item->item_type != itFilteredSignal)
+    emit stopReading();
     return;
-
-  SetPeriodDialog* spd = new SetPeriodDialog();
-
-  try {
-
-    if(spd->exec() == QDialog::Accepted) {
+  };
 
 
+  ui->progressBar->setValue(0);
 
-      QSqlQuery q(m_db);
+  if(ui->lineSaveFilePath->text().isEmpty()) {
 
-      if(!q.exec(QString("delete from filters where signal = '%1'").arg(item->data(0).toString())))
-        throw SvException(q.lastError().text());
-
-      q.finish();
-
-      if(!q.exec(QString("insert into filters values('%1', '%2', '%3', '%4')")
-                 .arg(item->parent()->data(0).toString())
-                 .arg(item->data(0).toString())
-                 .arg(spd->begin().toString("yyyy-MM-dd hh:mm:ss"))
-                 .arg(spd->end().toString("yyyy-MM-dd hh:mm:ss"))))
-        throw SvException(q.lastError().text());
-
-      q.finish();
-
-      item->setInfo(0, ItemInfo(itFilteredSignal, "signal", true, true));
-      item->setData(1, spd->begin());
-      item->setData(2, spd->end());
-
-      ui->treeViewFilters->repaint();
-
-    }
-
-    delete spd;
-
+    QMessageBox::critical(this, "Ошибка", "Укажите файл, в который будут сохраняться данные");
+    return;
   }
 
-  catch(SvException& e) {
+  // формируем и сохраняем json файл конфигурации
+  QString error;
+  if(!saveConfig(error)) {
 
-    QMessageBox::critical(this, "Error", e.error);
-
-    delete spd;
-
-
+    QMessageBox::critical(this, "Ошибка", error);
+    return;
   }
+
+  bool ok;
+  QString pass = QInputDialog::getText(this, tr("Авторизация для чтения данных"),
+                                       tr("Введите пароль:"), QLineEdit::Normal,
+                                       "QWERTY", &ok);
+  if (!ok || pass.isEmpty()) {
+
+    QMessageBox::critical(this, "Ошибка", "Не указан пароль. Продолжение операции невозможно.");
+    return;
+  }
+
+  //! создаем объект-читатель
+  m_reader = new zn1::ZNReader();
+
+  if(!m_reader->configure(m_config, pass)) {
+
+    QMessageBox::critical(this, "Ошибка", m_reader->lastError());
+    return;
+  }
+
+  connect(m_reader, &zn1::ZNReader::started,  this,             &MainWindow::setReadStateStarted);
+  connect(m_reader, &zn1::ZNReader::finished, this,             &MainWindow::setReadStateStopped);
+  connect(m_reader, &zn1::ZNReader::message,  this,             &MainWindow::message);
+
+  connect(this,     &MainWindow::stopReading, m_reader,         &zn1::ZNReader::stop);
+  //  connect(m_reader, &zn1::ZNReader::finished, m_reader,         &zn1::ZNReader::quit);
+
+  connect(m_reader, &zn1::ZNReader::finished, m_reader,         &zn1::ZNReader::deleteLater);
+
+  connect(m_reader, &zn1::ZNReader::zonesize, ui->progressBar,  &QProgressBar::setMaximum);
+  connect(m_reader, &zn1::ZNReader::total,   ui->progressBar,   &QProgressBar::setValue);
+
+  //  connect(m_reader, &zn1::ZNReader::partsize, ui->progressBarPart, &QProgressBar::setMaximum);
+  //  connect(m_reader, &zn1::ZNReader::parted,   ui->progressBarPart, &QProgressBar::setValue);
+
+//    connect(m_reader, &zn1::ZNReader::total, this, &MainWindow::setProgressZoneSize);
+//    connect(m_reader, &zn1::ZNReader::parted, this, &MainWindow::setCurrentProgress);
+  connect(m_reader, &zn1::ZNReader::loaded, this, &MainWindow::setStatusBarText);
+
+  m_reader->start();
+
 }
 
-void MainWindow::on_treeViewFilters_pressed(const QModelIndex &index)
-{
-
-}
-
-void MainWindow::on_bnPickData_clicked()
-{
-  QSqlQuery q(m_db);
-
-  try {
-
-    // сохраняем текущие заданные фильтры
-    if(!q.exec(QString("select filters.marker marker, min(filters.begin) begin, max(filters.end) end "
-                       "from filters group by marker")))
-      throw SvException(q.lastError().text());
-
-
-    QList<zn1::CoarseFilter> cf{};
-    while(q.next()) {
-
-//      qDebug() << q.value("m").toString() << q.value("b").toString() << q.value("e").toString();
-
-      QString   marker  = q.value("marker").toString();
-      QDateTime begin   = q.value("begin").toDateTime();
-      QDateTime end     = q.value("end").toDateTime();
-
-      cf.append(zn1::CoarseFilter(marker, begin, end));
-
-    }
-
-    q.finish();
-
-    //! создаем объект для грубого извлечения данных
-    //! т.е. вытаскиваем записи, ктоорые попадают в заданный временной диапазон, без разбора сигналов
-    m_coarse_picker = new zn1::CoarseDataPicker();
-
-    if(!m_coarse_picker->configure(m_config, cf)) {
-
-      QMessageBox::critical(this, "Ошибка", m_coarse_picker->lastError());
-      return;
-    }
-
-    connect(m_coarse_picker, &zn1::CoarseDataPicker::started,  this,                &MainWindow::setPickStateStarted);
-    connect(m_coarse_picker, &zn1::CoarseDataPicker::finished, this,                &MainWindow::setPickStateStopped);
-    connect(m_coarse_picker, &zn1::CoarseDataPicker::message,  this,                &MainWindow::message);
-
-    connect(this,     &MainWindow::stop,      m_coarse_picker,                      &zn1::CoarseDataPicker::stop);
-
-    connect(m_coarse_picker, &zn1::CoarseDataPicker::finished, m_coarse_picker,     &zn1::CoarseDataPicker::deleteLater);
-
-    connect(m_coarse_picker, &zn1::CoarseDataPicker::read_progress,ui->progressPick, &QProgressBar::setValue);
-    connect(m_coarse_picker, &zn1::CoarseDataPicker::find_progress,this,
-            [=](int count)->void { ui->statusbar->showMessage(QString("Найдено соответствий: %1").arg(count)); } );
-
-    //    connect(m_coarse_picker, &zn1::CoarseDataPicker::current_position, this,
-//            [=](qint64 position)-> void { ui->lineCurrentPos->setText(QString::number(position)); });
-
-    m_coarse_picker->start();
-
-
-  }
-  catch(SvException& e) {
-
-    q.finish();
-    QMessageBox::critical(this, "Error", e.error);
-
-  }
-}
-
-void MainWindow::setPickStateStarted()
+void MainWindow::setReadStateStarted()
 {
   ui->gbDataFilter->setEnabled(false);
-  ui->bnBackToBegin2->setEnabled(false);
-//  ui->bnToStep3->setEnabled(false);
+  ui->bnBackToBegin1->setEnabled(false);
+  ui->bnToStep3->setEnabled(false);
 
-  ui->progressPick->setVisible(true);
+  ui->progressBar->setVisible(true);
 
-  ui->bnPickData->setText("Отмена");
+//  ui->bnToStep3->setVisible(true);
+  ui->bnReadData->setText("Отмена");
 
-  l_pick_state = Started;
+  m_read_state = Started;
 
 //  qApp->processEvents();
 }
 
-void MainWindow::setPickStateStopped()
+void MainWindow::setReadStateStopped()
 {
+  // если слот вызван из ZNReader'a, значит чтение уже быоо пооизведено
+  if(sender() && QString(sender()->metaObject()->className()).contains("ZNReader")) {
+
+    ui->bnToStep3->setVisible(true);
+    ui->bnReadData->setText("Загрузить заново");
+  }
+  else {
+
+    ui->bnToStep3->setVisible(false);
+    ui->bnReadData->setText("Загрузить");
+  }
+
   ui->gbDataFilter->setEnabled(true);
-  ui->bnBackToBegin2->setEnabled(true);
-//  ui->bnToStep3->setEnabled(true);
+  ui->bnBackToBegin1->setEnabled(true);
+  ui->bnToStep3->setEnabled(true);
 
-  ui->progressPick->setVisible(false);
+  ui->progressBar->setVisible(false);
 
-  ui->bnPickData->setText("Применить");
-
-  l_pick_state = Stopped;
+  m_read_state = Stopped;
 
 //  qApp->processEvents();
+}
+
+/*void MainWindow::setProgressZoneSize(int size)
+{
+//  qDebug() << 10 << size;
+//  statusTip().
+//  reinterpret_cast<QLabel*>(statusBar()->children().at(0))->setText(QString("Общий: %1 Мб").arg(size));
+//  lblStatus1->setText("dsdsd"); // QString("Общий: %1 Мб").arg(size));
+  qDebug() << 11;
+//  qApp->processEvents();
+}*/
+
+void MainWindow::setStatusBarText(const QString& text)
+{
+  statusBar()->showMessage(text);
+}
+
+/*void MainWindow::setCurrentProgress(int size)
+{
+  ui->label_5->setText(QString("Сегмент: %1 Мб").arg(size));
+  qDebug() << 12;
+//  qApp->processEvents();
+}*/
+
+void MainWindow::on_bnSelectFile_clicked()
+{
+  QString full_file_name = QFileDialog::getSaveFileName(this, "Выберите файл для сохранения данных", QString(), "ZN Data (*.zndata);;Все файлы (*.*)");
+
+  if(!full_file_name.isEmpty())
+    ui->lineSaveFilePath->setText(full_file_name.endsWith(".zndata") ? full_file_name : QString("%1.zndata").arg(full_file_name));
+
+}
+
+/*void MainWindow::on_bnStop_clicked()
+{
+  emit stop();
+}*/
+
+void MainWindow::message(const QString msg, int level, int type)
+{
+  if(m_logger && level <= m_logger->options().level)
+    *m_logger << sv::log::TimeZZZ
+              << sv::log::Level(level)
+              << sv::log::MessageTypes(type)
+              << msg
+              << sv::log::endl;
+}
+
+/*void MainWindow::on_checkRequestZoneSize_toggled(bool checked)
+{
+  ui->spinZNZoneSize->setEnabled(!checked && ui->checkManualZNEdit->isChecked());
+}*/
+
+void MainWindow::on_radioLoadData_toggled(bool checked)
+{
+  ui->bnToNextStep->setEnabled(checked && !ui->lineSaveFilePath->text().isEmpty());
+}
+
+void MainWindow::on_radioDoNotLoad_toggled(bool checked)
+{
+  ui->bnToNextStep->setEnabled(checked && !ui->lineSaveFilePath->text().isEmpty());
+}
+
+void MainWindow::on_radioTraining_toggled(bool checked)
+{
+  ui->bnToNextStep->setEnabled(checked && !ui->lineSaveFilePath->text().isEmpty());
+}
+
+void MainWindow::on_bnToNextStep_clicked()
+{
+  if(ui->radioLoadData->isChecked())
+    ui->stackedWidget->setCurrentIndex(1);
+
+  else if(ui->radioDoNotLoad->isChecked()) {
+
+    m_config.zn_data_file = ui->lineSaveFilePath->text();
+    ui->stackedWidget->setCurrentIndex(2);
+
+  }
+
+  else
+  {}
+}
+
+void MainWindow::backToBegin()
+{
+  ui->stackedWidget->setCurrentIndex(0);
+}
+
+void MainWindow::on_bnToStep3_clicked()
+{
+  ui->stackedWidget->setCurrentIndex(2);
 }
 
 void MainWindow::on_bnEdit_clicked()
@@ -909,4 +702,264 @@ void MainWindow::on_bnCancelChanges_clicked()
 
   ui->bnAcceptChanges->setEnabled(false);
   ui->bnCancelChanges->setEnabled(false);
+}
+
+void MainWindow::on_cbSystems_currentIndexChanged(int index)
+{
+  QString marker = ui->cbSystems->itemData(index).toString();
+
+  makeTree(marker);
+}
+
+void MainWindow::on_lineQuickSearch_returnPressed()
+{
+  makeTree(ui->cbSystems->currentData().toString(), ui->lineQuickSearch->text(), ui->checkFilteredOnly->checkState() == Qt::Checked);
+}
+
+void MainWindow::on_checkFilteredOnly_toggled(bool checked)
+{
+  makeTree(ui->cbSystems->currentData().toString(), ui->lineQuickSearch->text(), checked);
+}
+
+void MainWindow::on_treeViewFilters_clicked(const QModelIndex &index)
+{
+  ui->statusbar->showMessage(m_model->itemFromIndex(index)->data(3).toString());
+}
+
+void MainWindow::on_bnDiscardQuickSearch_clicked()
+{
+  ui->lineQuickSearch->clear();
+  on_lineQuickSearch_returnPressed();
+}
+
+void MainWindow::on_treeViewFilters_doubleClicked(const QModelIndex &index)
+{
+  switch (m_model->itemFromIndex(ui->treeViewFilters->currentIndex())->info(0).type) {
+
+    case itFilteredSignal:
+    case itSignal:
+
+      changeFilter(index);
+      break;
+
+    default:
+      break;
+  };
+}
+
+void MainWindow::updateFilters()
+{
+  QSqlQuery q(m_db);
+
+  try {
+
+    // обновляем текущие фильтры
+    if(!q.exec(QString("select marker, signal, begin, end from filters order by marker asc")))
+      throw SvException(q.lastError().text());
+
+    m_config.pickerParams.filters.clear();
+    QList<zn1::FineFilter> ff{};
+    while(q.next()) {
+
+//      qDebug() << q.value("m").toString() << q.value("b").toString() << q.value("e").toString();
+
+      QString   signal  = q.value("signal").toString();
+      QString   marker  = q.value("marker").toString();
+      QDateTime begin   = q.value("begin").toDateTime();
+      QDateTime end     = q.value("end").toDateTime();
+
+      ff.append(zn1::FineFilter(marker, begin, end, signal));
+
+      m_config.pickerParams.filters.append(ff);
+
+    }
+
+    q.finish();
+
+  }
+  catch(SvException& e) {
+
+    q.finish();
+    QMessageBox::critical(this, "Error", e.error);
+
+  }
+}
+
+void MainWindow::on_treeViewFilters_pressed(const QModelIndex &index)
+{
+
+}
+
+void MainWindow::on_bnPickData_clicked()
+{
+  if(m_pick_state == ActionState::Started) {
+
+    emit stopPicking();
+    return;
+  }
+
+  QSqlQuery q(m_db);
+
+  try {
+
+    // формируем грубый фильтр, исходя из текущих заданных фильтров
+    if(!q.exec(QString("select filters.marker marker, min(filters.begin) begin, max(filters.end) end "
+                       "from filters group by marker")))
+      throw SvException(q.lastError().text());
+
+
+    QList<zn1::CoarseFilter> cf{};
+    while(q.next()) {
+
+//      qDebug() << q.value("m").toString() << q.value("b").toString() << q.value("e").toString();
+
+      QString   marker  = q.value("marker").toString();
+      QDateTime begin   = q.value("begin").toDateTime();
+      QDateTime end     = q.value("end").toDateTime();
+
+      cf.append(zn1::CoarseFilter(marker, begin, end));
+
+    }
+
+    q.finish();
+
+    //! создаем объект для грубого извлечения данных
+    //! т.е. вытаскиваем записи, ктоорые попадают в заданный временной диапазон, без разбора сигналов
+    m_coarse_picker = new zn1::CoarseDataPicker();
+
+    if(!m_coarse_picker->configure(m_config, cf)) {
+
+      QMessageBox::critical(this, "Ошибка", m_coarse_picker->lastError());
+      return;
+    }
+
+    connect(m_coarse_picker, &zn1::CoarseDataPicker::started,  this,                &MainWindow::setPickStateStarted);
+    connect(m_coarse_picker, &zn1::CoarseDataPicker::finished, this,                &MainWindow::setPickStateStopped);
+    connect(m_coarse_picker, &zn1::CoarseDataPicker::message,  this,                &MainWindow::message);
+
+    connect(this,            &MainWindow::stopPicking,         m_coarse_picker,     &zn1::CoarseDataPicker::stop);
+
+    connect(m_coarse_picker, &zn1::CoarseDataPicker::finished, m_coarse_picker,     &zn1::CoarseDataPicker::deleteLater);
+
+    connect(m_coarse_picker, &zn1::CoarseDataPicker::read_progress,ui->progressPick, &QProgressBar::setValue);
+    connect(m_coarse_picker, &zn1::CoarseDataPicker::find_progress,this,
+            [=](int count)->void { ui->statusbar->showMessage(QString("Найдено соответствий: %1").arg(count)); } );
+
+    m_coarse_picker->start();
+
+
+  }
+  catch(SvException& e) {
+
+    q.finish();
+    QMessageBox::critical(this, "Error", e.error);
+
+  }
+}
+
+void MainWindow::setPickStateStarted()
+{
+  ui->gbDataFilter->setEnabled(false);
+  ui->bnBackToBegin2->setEnabled(false);
+//  ui->bnToStep3->setEnabled(false);
+
+  ui->progressPick->setVisible(true);
+
+  ui->bnPickData->setText("Отмена");
+
+  m_pick_state = Started;
+
+//  qApp->processEvents();
+}
+
+void MainWindow::setPickStateStopped()
+{
+  ui->gbDataFilter->setEnabled(true);
+  ui->bnBackToBegin2->setEnabled(true);
+//  ui->bnToStep3->setEnabled(true);
+
+  ui->progressPick->setVisible(false);
+
+  ui->bnPickData->setText("Применить");
+
+  m_pick_state = Stopped;
+
+//  qApp->processEvents();
+}
+
+void MainWindow::changeFilter(const QModelIndex& index)
+{
+  TreeItem* item = m_model->itemFromIndex(index);
+
+  if(item->item_type != itSignal && item->item_type != itFilteredSignal)
+    return;
+
+  SetPeriodDialog* spd;
+
+  if(item->data(1).toDateTime().isValid() && item->data(2).toDateTime().isValid())
+    spd = new SetPeriodDialog(item->data(1).toDateTime(), item->data(2).toDateTime());
+
+  else
+    spd = new SetPeriodDialog(m_filter_last_begin, m_filter_last_end);
+
+  try {
+
+    if(spd->exec() == QDialog::Accepted) {
+
+      QSqlQuery q(m_db);
+
+      if(!q.exec(QString("delete from filters where signal = '%1'").arg(item->data(0).toString())))
+        throw SvException(q.lastError().text());
+
+      q.finish();
+
+      if(!q.exec(QString("insert into filters values('%1', '%2', '%3', '%4')")
+                 .arg(item->parent()->data(0).toString())
+                 .arg(item->data(0).toString())
+                 .arg(spd->begin().toString("yyyy-MM-dd hh:mm:ss"))
+                 .arg(spd->end().toString("yyyy-MM-dd hh:mm:ss"))))
+        throw SvException(q.lastError().text());
+
+      q.finish();
+
+      item->setInfo(0, ItemInfo(itFilteredSignal, "signal", true, true));
+      item->setData(1, spd->begin());
+      item->setData(2, spd->end());
+
+      updateFilters();
+
+      m_filter_last_begin = spd->begin();
+      m_filter_last_end   = spd->end();
+
+      ui->treeViewFilters->repaint();
+
+    }
+
+    delete spd;
+
+  }
+
+  catch(SvException& e) {
+
+    QMessageBox::critical(this, "Error", e.error);
+
+    delete spd;
+
+
+  }
+}
+
+void MainWindow::on_bnChangeFilter_clicked()
+{
+  switch (m_model->itemFromIndex(ui->treeViewFilters->currentIndex())->info(0).type) {
+
+    case itFilteredSignal:
+    case itSignal:
+
+      changeFilter(ui->treeViewFilters->currentIndex());
+      break;
+
+    default:
+      break;
+  };
 }

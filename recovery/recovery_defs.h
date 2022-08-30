@@ -199,23 +199,28 @@ namespace zn1 {
 
   public:
     FineFilter():
-      m_id(0),
       m_marker(QString()),
       m_begin(QDateTime::currentDateTime()),
       m_end(QDateTime::currentDateTime()),
       m_signal(QString())
-//      m_file_name(QString())
     {
       m_period.setData(m_begin, m_end);
     }
 
     FineFilter(FineFilter* filter):
-      m_id(filter->id()),
       m_marker(filter->marker()),
       m_begin(filter->begin()),
       m_end(filter->end()),
       m_signal(filter->signal())
-//      m_file_name(filter->file_name())
+    {
+      m_period.setData(m_begin, m_end);
+    }
+
+    FineFilter(const QString& marker, QDateTime begin, QDateTime end, const QString& signal):
+      m_marker(marker),
+      m_begin(begin),
+      m_end(end),
+      m_signal(signal)
     {
       m_period.setData(m_begin, m_end);
     }
@@ -225,7 +230,6 @@ namespace zn1 {
       if(this == &other)
         return *this;
 
-      m_id = other.m_id;
       m_marker = other.m_marker;
       m_begin = other.m_begin;
       m_end = other.m_end;
@@ -236,7 +240,6 @@ namespace zn1 {
       return *this;
     }
 
-    qint64      id()                const { return m_id;            }
     uint        marker_hash()             { return qHash(m_marker); }
 
     const QString     marker()      const { return m_marker;        }
@@ -257,11 +260,6 @@ namespace zn1 {
                                                                   .replace(DEFAULT_BEGIN_TEMPLATE,  m_begin.toString("ddMMyyyy-hhmmss"), Qt::CaseInsensitive)
                                                                   .replace(DEFAULT_END_TEMPLATE,    m_end.toString("ddMMyyyy-hhmmss"), Qt::CaseInsensitive)
                                                                 .append(file_name.endsWith(".znr") ? "" : ".znr"));
-    }
-
-    void setId(quint64 id)
-    {
-      m_id    = id;
     }
 
     void setBegin(QDateTime begin)
@@ -298,11 +296,6 @@ namespace zn1 {
       m_signal    = signal;
     }
 
-//    void setFileName(const QString& file_name)
-//    {
-//      m_file_name = file_name;
-//    }
-
     void setData(const QString& marker, FilterPeriod period, const QString& signal)
     {
       setData(marker, period.begin(), period.end(), signal);
@@ -318,12 +311,10 @@ namespace zn1 {
 
   private:
 
-    qint64      m_id;
-    QString     m_marker;
-    QDateTime   m_begin;
-    QDateTime   m_end;
-    QString     m_signal;
-//    QString     m_file_name;
+    QString       m_marker;
+    QDateTime     m_begin;
+    QDateTime     m_end;
+    QString       m_signal;
     FilterPeriod  m_period;
 
   };
@@ -574,9 +565,9 @@ namespace zn1 {
 
         else
         {
-          QJsonArray tasks = object.value(P_FILTERS).toArray();
+          QJsonArray filters = object.value(P_FILTERS).toArray();
 
-          for(QJsonValue t: tasks) {
+          for(QJsonValue t: filters) {
 
             if(!t.isObject())
               continue;
@@ -584,30 +575,30 @@ namespace zn1 {
             QJsonObject to = t.toObject();
             FineFilter filter = FineFilter{};
 
-            // task id
-            P = P_ID;
-            if(to.contains(P))
-            {
-              bool ok;
-              qint64 id = to.value(P).toVariant().toLongLong(&ok);
-              if(!ok)
-                throw SvException(QString(IMPERMISSIBLE_VALUE)
-                                   .arg(P).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact)))
-                                   .arg("Идентификатор задачи должен быть задан целым положительным числом"));
+//            // task id
+//            P = P_ID;
+//            if(to.contains(P))
+//            {
+//              bool ok;
+//              qint64 id = to.value(P).toVariant().toLongLong(&ok);
+//              if(!ok)
+//                throw SvException(QString(IMPERMISSIBLE_VALUE)
+//                                   .arg(P).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact)))
+//                                   .arg("Идентификатор задачи должен быть задан целым положительным числом"));
 
-              for(zn1::FineFilter task: p.filters) {
+//              for(zn1::FineFilter task: p.filters) {
 
-                if(task.id() == id)
-                  throw SvException(QString(IMPERMISSIBLE_VALUE)
-                                     .arg(P).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact)))
-                                     .arg(QString("Не уникальный идентификатор задачи: %1").arg(id)));
-              }
+//                if(task.id() == id)
+//                  throw SvException(QString(IMPERMISSIBLE_VALUE)
+//                                     .arg(P).arg(QString(QJsonDocument(to).toJson(QJsonDocument::Compact)))
+//                                     .arg(QString("Не уникальный идентификатор задачи: %1").arg(id)));
+//              }
 
-              filter.setId(id);
+//              filter.setId(id);
 
-            }
-            else
-              filter.setId(QDateTime::currentMSecsSinceEpoch());
+//            }
+//            else
+//              filter.setId(QDateTime::currentMSecsSinceEpoch());
 
             // marker
             P = P_MARKER;
@@ -731,12 +722,10 @@ namespace zn1 {
 
         QJsonObject t;
 
-//        t.insert(P_ID,        task.id());
         t.insert(P_MARKER,    filter.marker());
         t.insert(P_BEGIN,     filter.begin().toString(DEFAULT_DATETIME_FORMAT));
         t.insert(P_END,       filter.end().toString(DEFAULT_DATETIME_FORMAT));
         t.insert(P_SIGNAL,    filter.signal());
-//        t.insert(P_FILE_NAME, task.file_name());
 
         f.append(t);
       }

@@ -217,9 +217,9 @@ QVariant TreeModel::data(const QModelIndex &index, int role) const
 
           switch(item->item_type) {
 
-//            case(itSignal):
-//              color = QColor("aliceblue");
-//              break;
+            case(itSystem):
+              color = QColor("aliceblue");
+              break;
 
             case(itFilteredSignal):
               color = QColor("honeydew");
