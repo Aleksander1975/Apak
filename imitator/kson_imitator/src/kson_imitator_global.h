@@ -1,0 +1,12 @@
+﻿#ifndef KSON_IMITATOR_GLOBAL_H
+#define KSON_IMITATOR_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(KSON_IMITATOR_LIBRARY)
+#  define KSON_IMITATOR_EXPORT Q_DECL_EXPORT
+#else
+#  define KSON_IMITATOR_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // KSON_IMITATOR_GLOBAL_H
