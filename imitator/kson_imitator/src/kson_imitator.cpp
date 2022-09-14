@@ -127,20 +127,29 @@ void apak::SvKsonImitator::signalChanged(modus::SvSignal* signal)
 }
 
 void apak::SvKsonImitator::start()
-// В этой функции мы осуществляем привязку вызова функции send() к наступлению таймаута
-// таймера m_timer. Кроме того, в ней мы сформируем список "m_signals", хранящий
+// В этой функции мы осуществляем привязку вызова функции "send" к наступлению таймаута
+// таймера "m_timer", а также привязку вызова функции "answer_APAK" к сигналу
+// "modus::IOBuffer::dataReaded". Кроме того, в ней мы сформируем список "m_signals", хранящий
 // указатели на сигналы. Этот список отсортирован по возрастанию смещений
 // значений сигналов (в байтах) относительно начала информационного блока,
 // передаваемого из КСОН в АПАК.
 {
-  m_timer = new QTimer;
-  connect(m_timer, &QTimer::timeout, this, &SvKsonImitator::send);
-  m_timer->start(m_params.send_interval);
+    // Привязываем вызов функции "send" к к наступлению таймаута
+    // таймера "m_timer":
+    m_timer = new QTimer;
+    connect(m_timer, &QTimer::timeout, this, &SvKsonImitator::send);
 
-  // Формируем список "m_signals":
-  m_signals = m_signals_by_byte.values();
+    // Запускаем таймер:
+    m_timer->start(m_params.send_interval);
 
-  p_is_active = bool(p_config) && bool(p_io_buffer);
+    // Привязвыем вызов функции "answer_APAK" к сигналу "modus::IOBuffer::dataReaded". Этот сигнал
+    // испускается интерфейсной частью по приходу данных от интерефейса (в нашем случае - от АПАК).
+    connect(p_io_buffer, &modus::IOBuffer::dataReaded, this, &apak::SvKsonImitator::answer_APAK);
+
+    // Формируем список "m_signals":
+    m_signals = m_signals_by_byte.values();
+
+    p_is_active = bool(p_config) && bool(p_io_buffer);
 }
 
 void apak::SvKsonImitator::send()
@@ -375,6 +384,68 @@ void apak::SvKsonImitator::send()
        p_io_buffer->output->mutex.unlock();
 
     } //if(p_is_active)
+}
+
+void apak::SvKsonImitator::answer_APAK(modus::BUFF* buffer)
+// Эта функция вызывется по приходу пакета подтверждения от АПАК. В ней мы разбираем этот пакет
+// на отдельные поля и отображаем информацию о них в утилите "logview":
+// На данный момент - формат пакета подтверждения не ясен, поэтому будем реализовывать следующий
+// формат:
+// Размер данных - 4 байта
+// Время - 4 байта
+// Статус - 1 байт
+// Порядок байт во всех полях кадра - от старшего к младшему (bigEndian).
+{
+    qDebug () << "\n" << "КСОН: Вызов answer_APAK()";
+
+    buffer->mutex.lock();
+
+    if(!buffer->isReady())
+    {   // Если принятых данных нет, то выходим из функции:
+        return;
+    }
+
+    // Скопируем пришедший от АПАК пакет подтверждения в массив "confirmPackage":
+    QByteArray confirmPackage = QByteArray(buffer->data, buffer->offset);
+
+    buffer->reset();
+    buffer->mutex.unlock();
+
+    // Переменная "confirmPackage", содержит пакет подтверждения от АПАК. Будем разбирать этот пакет на поля
+    // с помощью переменной  "confirmPackageStream":
+    QDataStream confirmPackageStream (&confirmPackage, QIODevice::ReadOnly);
+
+    // Первое поле (4 байта) - размер данных. Он должен быть 4+4+1 = 9 байт
+    quint64 dataSize;
+    confirmPackageStream >> dataSize;
+
+    // Второе поле (4 байта) - время по данным внешней системы -
+    // целое количество секунд с 1 янв. 1970 г.
+    quint64  timeSince_1970;
+    confirmPackageStream >> timeSince_1970;
+
+    // Третье поле (1 байт) - статус (0 - успешное взаимодействие, другие значения - ошибки):
+    quint8 status;
+    confirmPackageStream >> status;
+
+    // Отобразим в утилите "logview" принятые поля пакета:
+    QByteArray description;
+    QByteArray value;
+
+    description = QByteArray ("Размер данных (должен быть 9 байт): ");
+    value.setNum(dataSize, 10);
+    emit message(QString(description + value), lldbg, sv::log::mtNew);
+    qDebug() << QString(description + value);
+
+    description = QByteArray ("Время - число секунд с 1 янв. 1970: ");
+    value.setNum(timeSince_1970);
+    emit message(QString(description + value), lldbg, sv::log::mtNew);
+    qDebug() << QString(description + value);
+
+    description = QByteArray ("Статус (нуль - успешное взаимодействие): ");
+    value.setNum(status);
+    emit message(QString(description + value), lldbg, sv::log::mtNew);
+    qDebug() << QString(description + value);
 }
 
 /** ********** EXPORT ************ **/
