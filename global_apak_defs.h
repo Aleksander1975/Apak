@@ -5,6 +5,7 @@
 
 #define TYPE_DATA "data"
 #define TYPE_STAT "stat"
+#define TYPE_TIME "time"
 
 namespace apak {
 
