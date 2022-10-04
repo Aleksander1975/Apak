@@ -18,18 +18,31 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+# Для генерации ошибки линкёра в случае наличия неопределённых
+# ссылок (undefined references) при сборке разделяемой библиотеки:
+QMAKE_LFLAGS += -Wno-unused-variable, -Wl,--no-undefined
+
+# Для отключения отладочного вывода через qDebug() в release-версии:
+CONFIG (debug, debug|release){
+    message ("Debug")
+}else{
+    message ("Release")
+    DEFINES += QT_NO_DEBUG_OUTPUT
+}
+
 SOURCES += \
-    ../../../Modus/global/signal/sv_signal.cpp \
+    ../../../../Modus/global/signal/sv_signal.cpp \
     kson_packet.cpp
 
 HEADERS += \
-    ../../../Modus/global/device/protocol/sv_abstract_protocol.h \
-    ../../../Modus/global/global_defs.h \
-    ../../../Modus/global/signal/sv_signal.h \
+    ../../../../Modus/global/device/protocol/sv_abstract_protocol.h \
+    ../../../../Modus/global/global_defs.h \
+    ../../../../Modus/global/signal/sv_signal.h \
     protocol_params.h \
-    ../../../Modus/global/device/device_defs.h \
+    ../../../../Modus/global/device/device_defs.h \
     kson_packet.h \
-    kson_packet_global.h
+    kson_packet_global.h \
+    signal_params.h
 
 # Default rules for deployment.
 unix {
