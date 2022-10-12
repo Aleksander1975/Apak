@@ -41,7 +41,8 @@ HEADERS += \
     ../../../../Modus/global/device/device_defs.h \
     protocol_params.h \
     kson_imitator.h \
-    kson_imitator_global.h
+    kson_imitator_global.h \
+    signal_params.h
 
 # Default rules for deployment.
 unix {
