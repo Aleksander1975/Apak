@@ -23,8 +23,11 @@
 // до получения пакета подтверждения от КСОН'a":
 #define CONFORM_INTERVAL   "conform_interval"
 
-// Имя параметра "размер информационного блока в информационном кадре от АПАК к КСОН":
-#define DATA_LEN        "data_len"
+// Имя параметра "размер информационного блока в информационном кадре ПОСЫЛАЕМОМ АПАК к КСОН":
+#define SEND_DATA_LEN        "send_data_len"
+
+// Имя параметра "размер информационного блока в информационном кадре ПРИНИМАЕМОМ АПАК от КСОН":
+#define RECEIVE_DATA_LEN     "receive_data_len"
 
 // Имя параметра "предельно допустимое количество идущих подряд ошибок взаимодействия":
 #define NUMBER_OF_ERRORS "number_errror"
@@ -41,8 +44,12 @@
 #define DEFAULT_CONFORM_INTERVAL  200
 
 // Значение по умолчанию для параметра "размер информационного блока
-// в информационном кадре от АПАК к КСОН":
-#define DEFAULT_DATA_LEN    2
+// в информационном кадре ПОСЫЛАЕМОМ АПАК к КСОН":
+#define DEFAULT_SEND_DATA_LEN     2
+
+// Значение по умолчанию для параметра "размер информационного блока
+// в информационном кадре ПРИНИМАЕМОМ АПАК от КСОН":
+#define DEFAULT_RECEIVE_DATA_LEN    33
 
 // Значение по умолчанию для параметра "предельно допустимое
 // количество идущих подряд ошибок взаимодействия":
@@ -58,7 +65,8 @@ namespace apak {
    //       - предельно допустимое время между информационными кадрами от КСОН,
    //       - предельно допустимое время от передачи информационного кадра КСОН'у
    //             до получения пакета подтверждения от КСОН'a,
-   //       - размер информационного блока в информационном кадре от АПАК к КСОН,
+   //       - размер информационного блока в информационном кадре ПОСЫЛАЕМОМ АПАК к КСОН,
+   //       - размер информационного блока в информационном кадре ПРИНИМАЕМОМ АПАК от КСОН,
    //       - предельно допустимое количество идущих подряд ошибок взаимодействия.
   {
     // Период поступления данных от АПАК к КСОН:
@@ -71,8 +79,11 @@ namespace apak {
     // до получения пакета подтверждения от КСОН'a:
     quint16 conform_interval = 0;
 
-    // Размер информационного блока в информационном кадре от АПАК к КСОН:
-    quint16 data_len = 0;
+    // Размер информационного блока в информационном кадре ПОСЫЛАЕМОМ АПАК к КСОН:
+    quint16 send_data_len = 0;
+
+    // Размер информационного блока в информационном кадре ПРИНИМАЕМОМ АПАК от КСОН:
+    quint16 receive_data_len = 0;
 
     // Предельно допустимое количество идущих подряд ошибок взаимодействия:
     quint16 numberOfErrors = 0;
@@ -153,20 +164,35 @@ namespace apak {
       else
         p.conform_interval = DEFAULT_CONFORM_INTERVAL;
 
-      // Считываем значение параметра "размер информационного блока в информационном кадре от АПАК к КСОН":
-      P = DATA_LEN;
+      // Считываем значение параметра "размер информационного блока в информационном кадре ПОСЫЛАЕМОМ АПАК к КСОН":
+      P = SEND_DATA_LEN;
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
           throw SvException(QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toString())
-                                 .arg("Размер информационного блока в информационном кадре от АПАК к КСОН должен быть задан целым числом"));
+                                 .arg("Размер информационного блока в информационном кадре ПОСЫЛАЕМОМ АПАК к КСОН должен быть задан целым числом"));
 
-        p.data_len = object.value(P).toInt(DEFAULT_DATA_LEN);
+        p.send_data_len = object.value(P).toInt(DEFAULT_SEND_DATA_LEN);
       }
       else
-        p.data_len = DEFAULT_DATA_LEN;
+        p.send_data_len = DEFAULT_SEND_DATA_LEN;
+
+      // Считываем значение параметра "размер информационного блока в информационном кадре ПРИНИМАЕМОМ АПАК от КСОН должен быть задан целым числом":
+      P = RECEIVE_DATA_LEN;
+      if(object.contains(P))
+      {
+        if(object.value(P).toInt(-1) < 0)
+          throw SvException(QString(IMPERMISSIBLE_VALUE)
+                                 .arg(P)
+                                 .arg(object.value(P).toString())
+                                 .arg("Размер информационного блока в информационном кадре ПРИНИМАЕМОМ АПАК от КСОН должен быть задан целым числом"));
+
+        p.receive_data_len = object.value(P).toInt(DEFAULT_RECEIVE_DATA_LEN);
+      }
+      else
+        p.receive_data_len = DEFAULT_RECEIVE_DATA_LEN;
 
       // Считываем значение параметра "предельно допустимое количество идущих подряд ошибок взаимодействия":
       P = NUMBER_OF_ERRORS;
@@ -198,10 +224,11 @@ namespace apak {
     {
       QJsonObject j;
 
-      j.insert( SEND_INTERVAL,     QJsonValue(send_interval).toInt());
+      j.insert (SEND_INTERVAL,     QJsonValue(send_interval).toInt());
       j.insert (RECEIVE_INTERVAL,  QJsonValue(receive_interval).toInt());
       j.insert (CONFORM_INTERVAL,  QJsonValue(conform_interval).toInt());
-      j.insert (DATA_LEN,          QJsonValue(data_len).toInt());
+      j.insert (SEND_DATA_LEN,     QJsonValue(send_data_len).toInt());
+      j.insert (RECEIVE_DATA_LEN,  QJsonValue(receive_data_len).toInt());
       j.insert (NUMBER_OF_ERRORS,  QJsonValue(numberOfErrors).toInt());
 
       return j;
