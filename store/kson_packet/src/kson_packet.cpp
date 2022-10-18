@@ -567,6 +567,8 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
 // отсчитывающий время от посылки нами информиционного кадра КСОНу, до получения нами
 // от сети КСОН пакета подтверждения. Также при этом мы запускаем "таймер посылки m_sendTimer".
 {
+    qDebug() << "АПАК: packageFrom_KSON";
+
   if(p_is_active) {
 
     buffer->mutex.lock();
@@ -586,6 +588,8 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
 
     // Определим тип принятого кадра:
     unsigned length = packageFrom_KSON.length();
+
+    qDebug() << "АПАК: packageFrom_KSON - длина принятого от КСОН пакета: " << length;
 
     if ( length == 43)
     {// Принят информационный кадр:
@@ -874,6 +878,10 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
             // счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
 
             m_interactionErrorCounter = 0;
+
+            // Выводим сообщение оператору:
+            qDebug() << QString("АПАК: Принят пакет подтверждения от АПАК без ошибок");
+            emit message(QString("АПАК: Принят пакет подтверждения от АПАК без ошибок"), sv::log::llInfo, sv::log::mtSuccess);
         }
 
         // Запускаем на единственное срабатывание "таймер посылки m_sendTimer" отсчитывающий
@@ -903,8 +911,8 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
       // указанного в протоколе, то испускаем для интерфейсной части сигнал "say"
       // с командой "breakConnection", который приказывает интерфейсной части разорвать
       // соединение с сервером КСОН:
-        qDebug() << QString ("АПАК: Выдаём сигнал на разрыв соединения с TCP-сервером");
-        emit message(QString("АПАК: Выдаём сигнал на разрыв соединения с TCP-сервером"), sv::log::llError, sv::log::mtError);
+        qDebug() << QString ("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером");
+        emit message(QString("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером"), sv::log::llError, sv::log::mtError);
 
         emit p_io_buffer->say("breakConnection");
     }
@@ -940,7 +948,9 @@ void apak::SvKsonPacket::noConfirmationPackage(void)
     // соединение с сервером КСОН:
     if (m_interactionErrorCounter >= m_params.numberOfErrors)
     {
-        qDebug() << "АПАК: Выдаём команду интерфейсной части на разрыв соединения";
+        qDebug() << QString ("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером");
+        emit message(QString("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером"), sv::log::llError, sv::log::mtError);
+
         emit p_io_buffer->say("breakConnection");
     }
 
