@@ -277,231 +277,230 @@ void apak::SvKsonImitator::sendInformFrame(void)
     // Останавливаем "таймер посылки" m_sendTimer:
     m_sendTimer->stop();
 
-    if(p_is_active)
-    {
-        // В переменной "m_relevanceСoncrete_by_group_to_APAK" формируем битовый массив,
-        // который для каждого номера группы сигналов (номер - это индекс в этом массиве),
-        // определяет актуальны ли её сигналы (false - не актуальны, true - актуальны).
+    if(p_is_active == false)
+        return;
 
-        // Изначально уставновим актуальность групп сигналов, исходя из наличия сигналов
-        // данной группы в файле сигналов для устройства КСОН.
-        m_relevanceConcrete_by_group_to_APAK = m_relevance_by_group_to_APAK;
+    // В переменной "m_relevanceСoncrete_by_group_to_APAK" формируем битовый массив,
+    // который для каждого номера группы сигналов (номер - это индекс в этом массиве),
+    // определяет актуальны ли её сигналы (false - не актуальны, true - актуальны).
 
-        // В переменной "m_send_data" формируем информационный кадр от имитатора сети КСОН
-        // в систему АПАК в соответствии с протоколом обмена.
-        // Вначале, выделим память и заполним первые два поля:
-        m_send_data.fill( 0, 4 + 4);
+    // Изначально уставновим актуальность групп сигналов, исходя из наличия сигналов
+    // данной группы в файле сигналов для устройства КСОН.
+    m_relevanceConcrete_by_group_to_APAK = m_relevance_by_group_to_APAK;
 
-        // 1.1. Формируем первое поле информационного кадра:
-        // Первое поле (4 байта) - размер данных (43 байта): 0x0, 0x0, 0x0, 0х2b
-        m_send_data [0] = 0;
-        m_send_data [1] = 0;
-        m_send_data [2] = 0;
-        m_send_data [3] = 0x2b;
+    // В переменной "m_send_data" формируем информационный кадр от имитатора сети КСОН
+    // в систему АПАК в соответствии с протоколом обмена.
+    // Вначале, выделим память и заполним первые два поля:
+    m_send_data.fill( 0, 4 + 4);
 
-        // 1.2. Формируем второе поле информационного кадра:
-        // Второе поле (4 байта) - время по данным внешней системы -
-        // целое количество секунд с 1 янв. 1970 г.
-        quint64  timeSince_1970 = QDateTime::currentMSecsSinceEpoch() / 1000;
+    // 1.1. Формируем первое поле информационного кадра:
+    // Первое поле (4 байта) - размер данных (43 байта): 0x0, 0x0, 0x0, 0х2b
+    m_send_data [0] = 0;
+    m_send_data [1] = 0;
+    m_send_data [2] = 0;
+    m_send_data [3] = 0x2b;
 
-        m_send_data [4] = (uint8_t) ((timeSince_1970 >> 24) & 0xFF);
-        m_send_data [5] = (uint8_t) ((timeSince_1970 >> 16) & 0xFF);
-        m_send_data [6] = (uint8_t) ((timeSince_1970 >>  8) & 0xFF);
-        m_send_data [7] = (uint8_t) (timeSince_1970 & 0xFF);
+    // 1.2. Формируем второе поле информационного кадра:
+    // Второе поле (4 байта) - время по данным внешней системы -
+    // целое количество секунд с 1 янв. 1970 г.
+    quint64  timeSince_1970 = QDateTime::currentMSecsSinceEpoch() / 1000;
 
-        // 1.3. Формируем поле "данные" информационного кадра. Это поле представляет собой
-        // блок параметрической информации. Будем формировать его в переменной "dataFrame":
-        QByteArray dataFrame(m_params.send_data_len, 0);
+    m_send_data [4] = (uint8_t) ((timeSince_1970 >> 24) & 0xFF);
+    m_send_data [5] = (uint8_t) ((timeSince_1970 >> 16) & 0xFF);
+    m_send_data [6] = (uint8_t) ((timeSince_1970 >>  8) & 0xFF);
+    m_send_data [7] = (uint8_t) (timeSince_1970 & 0xFF);
 
-        // Переменную "dataFrame" будем формировать с помощью переменной "dataFrameStream":
-        QDataStream dataFrameStream(&dataFrame, QIODevice::WriteOnly);
+    // 1.3. Формируем поле "данные" информационного кадра. Это поле представляет собой
+    // блок параметрической информации. Будем формировать его в переменной "dataFrame":
+    QByteArray dataFrame;// ОТЛАДКА(m_params.send_data_len, 0);
 
-        // Согласно протоколу числа типа "float" должны занимать 4 байта:
-        dataFrameStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    // Переменную "dataFrame" будем формировать с помощью переменной "dataFrameStream":
+    QDataStream dataFrameStream(&dataFrame, QIODevice::WriteOnly);
+
+    // Согласно протоколу числа типа "float" должны занимать 4 байта:
+    dataFrameStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
 
 
-        // Формируем информационный блок кадра, передаваемого от КСОН к АПАК:
-        for (quint8 signalNumberInDataFrame = 0; signalNumberInDataFrame < m_signals_to_APAK.size();
-                 signalNumberInDataFrame++)
-        { // Проходим по всем номерам параметров (сигналов) в блоке:
+    // Формируем информационный блок кадра, передаваемого от КСОН к АПАК:
+    for (quint8 signalNumberInDataFrame = 0; signalNumberInDataFrame < m_signals_to_APAK.size();
+             signalNumberInDataFrame++)
+    { // Проходим по всем номерам параметров (сигналов) в блоке:
 
-            // 1.3.1. Получаем указатель на сигнал:
-            modus::SvSignal* signal = m_signals_to_APAK [signalNumberInDataFrame];
+        // 1.3.1. Получаем указатель на сигнал:
+        modus::SvSignal* signal = m_signals_to_APAK [signalNumberInDataFrame];
 
-            // 1.3.2. Получаем параметры сигнала:
-            apak::SignalParams signal_params = m_params_by_signal_to_APAK.value (signal);
+        // 1.3.2. Получаем параметры сигнала:
+        apak::SignalParams signal_params = m_params_by_signal_to_APAK.value (signal);
 
-            // 1.3.3. Проверим актуальна ли информация, содержащаяся в сигнале:
-            if(!signal->value().isValid() || signal->value().isNull())
-            {
-                // 1.3.3.1. Информация в сигнале не актуальна ->
+        // 1.3.3. Проверим актуальна ли информация, содержащаяся в сигнале:
+        if(!signal->value().isValid() || signal->value().isNull())
+        {
+            // 1.3.3.1. Информация в сигнале не актуальна ->
 
-                // 1.3.3.1.1.Сбросим в "false" соответствующий группе этого сигнала бит в
-                // массиве "m_relevanceСoncrete_by_group_to_APAK", то есть объявим сигналы
-                // этой группы неактуальными:
-                m_relevanceConcrete_by_group_to_APAK [signal_params.group] = false;
+            // 1.3.3.1.1.Сбросим в "false" соответствующий группе этого сигнала бит в
+            // массиве "m_relevanceСoncrete_by_group_to_APAK", то есть объявим сигналы
+            // этой группы неактуальными:
+            m_relevanceConcrete_by_group_to_APAK [signal_params.group] = false;
 
-                // 1.3.3.1.2. Выясним тип сигнала ("boolean", "unsigned", "false") и запишем в
-                // поток НУЛЕВОЕ значение этого типа.
+            // 1.3.3.1.2. Выясним тип сигнала ("boolean", "unsigned", "false") и запишем в
+            // поток НУЛЕВОЕ значение этого типа.
 
-                // Получаем тип сигнала:
-                QString type = signal_params.data_type;
-
-                if ( type.compare ("boolean", Qt::CaseInsensitive) == 0)
-                { // Этот сигнал представляет тип "boolean" -> для КСОН запишем в поток целый НУЛЕВОЙ байт.
-
-                    dataFrameStream << (quint8) 0x00;
-                }
-
-                if ( type.compare ("float", Qt::CaseInsensitive) == 0)
-                { // Этот сигнал представляет тип "float" и занимает 4 байта, порядок которых: big-endian
-
-                    dataFrameStream << (float) 0;
-                }
-
-                if ( type.compare ("unsigned", Qt::CaseInsensitive) == 0)
-                { // Этот сигнал представляет тип "unsigned" и занимает 4 байта, порядок которых: big-endian.
-
-                    dataFrameStream << (unsigned) 0;
-                }
-
-                continue;
-            } // if(!signal->value().isValid()
-
-            // 1.3.4. Получаем тип сигнала и попытаемся преобразовать содержимое
-            // переменной "signalValue" к этому типу:
+            // Получаем тип сигнала:
             QString type = signal_params.data_type;
 
             if ( type.compare ("boolean", Qt::CaseInsensitive) == 0)
-            {  // 1.3.4.1. Этот сигнал представляет тип "boolean" и, в случае КСОН,
-               // занимает младший бит в байте (остальные биты в этом
-               // байте не важны). Поэтому мы будем записывать в поток целый байт.
+            { // Этот сигнал представляет тип "boolean" -> для КСОН запишем в поток целый НУЛЕВОЙ байт.
 
-                bool booleanSignal;
-
-                // 1.3.4.1.1. Теперь переведём информацию в сигнале в тип "boolean":
-                booleanSignal = signal->value().toBool();
-
-                // 1.3.4.1.2. Выводим значение сигнала в поток:
-                if (booleanSignal == true)
-                    dataFrameStream << (quint8) 0x01;
-                else
-                    dataFrameStream << (quint8) 0x00;
-            } // Этот сигнал представляет тип "boolean"
+                dataFrameStream << (quint8) 0x00;
+            }
 
             if ( type.compare ("float", Qt::CaseInsensitive) == 0)
-            { // 1.3.4.2. Этот сигнал представляет тип "float" и занимает 4 байта, порядок которых: big-endian.
+            { // Этот сигнал представляет тип "float" и занимает 4 байта, порядок которых: big-endian
 
-                bool ok;
-                float floatSignal;
-
-                // 1.3.4.2.1. Теперь проверим представима ли информация в сигнале числом типа "float":
-                floatSignal = signal->value().toFloat(&ok);
-
-                if(ok == false )
-                {
-                    // 1.3.4.2.2. Информация в сигнале не представима числом типа "float" ->
-                    // 1.3.4.2.2.1. Cбросим в "false" соответствующий группе этого сигнала бит в массиве
-                    // "m_relevanceСoncrete_by_group_to_APAK", то есть объявим сигналы этой группы неактуальными:
-                    m_relevanceConcrete_by_group_to_APAK [signal_params.group] = false;
-
-                    // 1.3.4.2.2.2. Запишем в поток НУЛЕВОЕ значение типа "float":
-                    dataFrameStream << (float) 0;
-                }
-                else
-                {
-                    // 1.3.4.2.3. Выводим значение сигнала в поток:
-                    dataFrameStream << floatSignal;
-                }
-            } // Этот сигнал представляет тип "float" и занимает 4 байта
+                dataFrameStream << (float) 0;
+            }
 
             if ( type.compare ("unsigned", Qt::CaseInsensitive) == 0)
-            { // 1.3.4.3. Этот сигнал представляет тип "unsigned" и занимает 4 байта, порядок которых: big-endian.
+            { // Этот сигнал представляет тип "unsigned" и занимает 4 байта, порядок которых: big-endian.
 
-                bool ok;
-                unsigned unsignedSignal;
+                dataFrameStream << (unsigned) 0;
+            }
 
-                // 1.3.4.3.1 Теперь проверим представима ли информация в сигнале числом типа unsigned:
-                unsignedSignal = signal->value().toUInt (&ok);
+            continue;
+        } // if(!signal->value().isValid()
 
-                if(ok == false )
-                {
-                    // 1.3.4.3.2.Информация в сигнале не представима числом типа "unsigned" ->
-                    // 1.3.4.3.2.1. Cбросим в "false" соответствующий группе этого сигнала бит в массиве
-                    // "m_relevanceСoncrete_by_group_to_APAK", то есть объявим сигналы этой группы неактуальными:
-                    m_relevanceConcrete_by_group_to_APAK [signal_params.group] = false;
+        // 1.3.4. Получаем тип сигнала и попытаемся преобразовать содержимое
+        // переменной "signalValue" к этому типу:
+        QString type = signal_params.data_type;
 
-                    // 1.3.4.3.2.2. Запишем в поток НУЛЕВОЕ значение типа "unsigned":
-                    dataFrameStream << (unsigned) 0;
-                }
-                else
-                {
-                    // 1.3.4.3.3. Выводим значение сигнала в поток:
-                    dataFrameStream << unsignedSignal;
-                }
-           } // Этот сигнал представляет тип "unsigned" и занимает 4 байта
-        } // for
+        if ( type.compare ("boolean", Qt::CaseInsensitive) == 0)
+        {  // 1.3.4.1. Этот сигнал представляет тип "boolean" и, в случае КСОН,
+           // занимает младший бит в байте (остальные биты в этом
+           // байте не важны). Поэтому мы будем записывать в поток целый байт.
 
-        // 1.4. Формируем поле "доступность групп". Это поле представляет собой два байта (сначала -
-        // старший, затем - младший). При этом: младший бит младшего байта - соответветствует
-        // нулевой группе. Данные для поля "доступность групп" формируем в  массиве бит
-        // "m_relevanceConcrete_by_group_to_APAK".
+            bool booleanSignal;
 
-        // 1.4.1. Конвертируем данные из массива бит "m_relevanceConcrete_by_group_to_APAK" в массив байт
-        // "relevanceGroup_Byte_to_APAK".
-        // Для начала заполняем массив байт "relevanceGroup_Byte_to_APAK" нулями:
-        QByteArray relevanceGroup_Byte_to_APAK(2, 0);
+            // 1.3.4.1.1. Теперь переведём информацию в сигнале в тип "boolean":
+            booleanSignal = signal->value().toBool();
 
-        // В переменной цикла "bitNumberIn_relevance_by_group_to_APAK" будем хранить текущий номер бита в
-        // массиве "relevanceGroup_Byte_to_APAK".
-        for(quint16  bitNumberIn_relevance_by_group_to_APAK = 0; bitNumberIn_relevance_by_group_to_APAK <16;
-                       bitNumberIn_relevance_by_group_to_APAK++)
-        {
-            relevanceGroup_Byte_to_APAK [bitNumberIn_relevance_by_group_to_APAK / 8] = relevanceGroup_Byte_to_APAK.at(bitNumberIn_relevance_by_group_to_APAK / 8) |
-                         ((m_relevanceConcrete_by_group_to_APAK [bitNumberIn_relevance_by_group_to_APAK] ? 1 : 0) << (bitNumberIn_relevance_by_group_to_APAK % 8));
-        }
+            // 1.3.4.1.2. Выводим значение сигнала в поток:
+            if (booleanSignal == true)
+                dataFrameStream << (quint8) 0x01;
+            else
+                dataFrameStream << (quint8) 0x00;
+        } // Этот сигнал представляет тип "boolean"
 
-        // 1.4.2. Перепишем данные из массива байт "relevanceGroup_Byte_to_APAK" в 8-ой и 9-ый байты массива
-        // "m_send_data". При этом 0-ой байт массива байт "relevanceGroup_Byte_to_APAK" перепишем в 9-ый байт массива
-        // "m_send_data", a 1-ый байт массива "relevanceGroup_Byte_to_APAK" перепишем в 8-ой байт массива
-        // "m_send_data", так как во всех полях кадра "m_send_data" порядок байт от
-        // старшего к младшему (bigEndian).
-        m_send_data [8] = relevanceGroup_Byte_to_APAK[1];
-        m_send_data [9] = relevanceGroup_Byte_to_APAK[0];
+        if ( type.compare ("float", Qt::CaseInsensitive) == 0)
+        { // 1.3.4.2. Этот сигнал представляет тип "float" и занимает 4 байта, порядок которых: big-endian.
 
-        // 1.5. Добавим к трём полям информационного кадра, уже содержащимся в массиве "m_send_data",
-        // четвёртое - блок параметрической информации, сформированный нами в массиве "dataFrame".
-        m_send_data.append (dataFrame);
+            bool ok;
+            float floatSignal;
 
-        //qDebug() << "m_relevanceConcrete_by_group_to_APAK" << m_relevanceConcrete_by_group_to_APAK;
+            // 1.3.4.2.1. Теперь проверим представима ли информация в сигнале числом типа "float":
+            floatSignal = signal->value().toFloat(&ok);
 
-        //qDebug() << "Имитатор КСОН: Блок параметрической информации от сети КСОН:";
-        //qDebug() << "Размер: " << dataFrame.length();
-        //qDebug() << "Содержание: " << dataFrame.toHex();
+            if(ok == false )
+            {
+                // 1.3.4.2.2. Информация в сигнале не представима числом типа "float" ->
+                // 1.3.4.2.2.1. Cбросим в "false" соответствующий группе этого сигнала бит в массиве
+                // "m_relevanceСoncrete_by_group_to_APAK", то есть объявим сигналы этой группы неактуальными:
+                m_relevanceConcrete_by_group_to_APAK [signal_params.group] = false;
 
-        qDebug() << "Имитатор КСОН: Информационный кадр от сети КСОН:";
-        qDebug() << "Имитатор КСОН: Размер: " << m_send_data.length();
-        qDebug() << "Имитатор КСОН: Содержание: " << m_send_data.toHex();
+                // 1.3.4.2.2.2. Запишем в поток НУЛЕВОЕ значение типа "float":
+                dataFrameStream << (float) 0;
+            }
+            else
+            {
+                // 1.3.4.2.3. Выводим значение сигнала в поток:
+                dataFrameStream << floatSignal;
+            }
+        } // Этот сигнал представляет тип "float" и занимает 4 байта
 
-        // 2. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
-       p_io_buffer->output->mutex.lock();
-       p_io_buffer->output->setData(m_send_data);
+        if ( type.compare ("unsigned", Qt::CaseInsensitive) == 0)
+        { // 1.3.4.3. Этот сигнал представляет тип "unsigned" и занимает 4 байта, порядок которых: big-endian.
 
-       emit message(QString(m_send_data.toHex()), lldbg, sv::log::mtNew);
+            bool ok;
+            unsigned unsignedSignal;
 
-       p_io_buffer->output->setReady(true);
-       emit p_io_buffer->readyWrite(p_io_buffer->output);
+            // 1.3.4.3.1 Теперь проверим представима ли информация в сигнале числом типа unsigned:
+            unsignedSignal = signal->value().toUInt (&ok);
 
-       p_io_buffer->output->mutex.unlock();
+            if(ok == false )
+            {
+                // 1.3.4.3.2.Информация в сигнале не представима числом типа "unsigned" ->
+                // 1.3.4.3.2.1. Cбросим в "false" соответствующий группе этого сигнала бит в массиве
+                // "m_relevanceСoncrete_by_group_to_APAK", то есть объявим сигналы этой группы неактуальными:
+                m_relevanceConcrete_by_group_to_APAK [signal_params.group] = false;
 
-       // 3. Запускаем таймер подтверждения "m_conformTimer" с периодом,
-       // равным предельно допустимому времени от посылки нами информационного кадра к системе АПАК,
-       // до получения нами пакета подтверждения от системы АПАК. Это время
-       // задаётся  в конфигурационном файле "config_apak_imitator.json", как параметр протокола имитатора
-       // устройства КСОН:
-       m_conformTimer->start(m_params.conform_interval);
+                // 1.3.4.3.2.2. Запишем в поток НУЛЕВОЕ значение типа "unsigned":
+                dataFrameStream << (unsigned) 0;
+            }
+            else
+            {
+                // 1.3.4.3.3. Выводим значение сигнала в поток:
+                dataFrameStream << unsignedSignal;
+            }
+       } // Этот сигнал представляет тип "unsigned" и занимает 4 байта
+    } // for
 
-    } //if(p_is_active)
+    // 1.4. Формируем поле "доступность групп". Это поле представляет собой два байта (сначала -
+    // старший, затем - младший). При этом: младший бит младшего байта - соответветствует
+    // нулевой группе. Данные для поля "доступность групп" формируем в  массиве бит
+    // "m_relevanceConcrete_by_group_to_APAK".
+
+    // 1.4.1. Конвертируем данные из массива бит "m_relevanceConcrete_by_group_to_APAK" в массив байт
+    // "relevanceGroup_Byte_to_APAK".
+    // Для начала заполняем массив байт "relevanceGroup_Byte_to_APAK" нулями:
+    QByteArray relevanceGroup_Byte_to_APAK(2, 0);
+
+    // В переменной цикла "bitNumberIn_relevance_by_group_to_APAK" будем хранить текущий номер бита в
+    // массиве "relevanceGroup_Byte_to_APAK".
+    for(quint16  bitNumberIn_relevance_by_group_to_APAK = 0; bitNumberIn_relevance_by_group_to_APAK <16;
+                   bitNumberIn_relevance_by_group_to_APAK++)
+    {
+        relevanceGroup_Byte_to_APAK [bitNumberIn_relevance_by_group_to_APAK / 8] = relevanceGroup_Byte_to_APAK.at(bitNumberIn_relevance_by_group_to_APAK / 8) |
+                     ((m_relevanceConcrete_by_group_to_APAK [bitNumberIn_relevance_by_group_to_APAK] ? 1 : 0) << (bitNumberIn_relevance_by_group_to_APAK % 8));
+    }
+
+    // 1.4.2. Перепишем данные из массива байт "relevanceGroup_Byte_to_APAK" в 8-ой и 9-ый байты массива
+    // "m_send_data". При этом 0-ой байт массива байт "relevanceGroup_Byte_to_APAK" перепишем в 9-ый байт массива
+    // "m_send_data", a 1-ый байт массива "relevanceGroup_Byte_to_APAK" перепишем в 8-ой байт массива
+    // "m_send_data", так как во всех полях кадра "m_send_data" порядок байт от
+    // старшего к младшему (bigEndian).
+    m_send_data [8] = relevanceGroup_Byte_to_APAK[1];
+    m_send_data [9] = relevanceGroup_Byte_to_APAK[0];
+
+    // 1.5. Добавим к трём полям информационного кадра, уже содержащимся в массиве "m_send_data",
+    // четвёртое - блок параметрической информации, сформированный нами в массиве "dataFrame".
+    m_send_data.append (dataFrame);
+
+    //qDebug() << "m_relevanceConcrete_by_group_to_APAK" << m_relevanceConcrete_by_group_to_APAK;
+
+    //qDebug() << "Имитатор КСОН: Блок параметрической информации от сети КСОН:";
+    //qDebug() << "Размер: " << dataFrame.length();
+    //qDebug() << "Содержание: " << dataFrame.toHex();
+
+    qDebug() << "Имитатор КСОН: Информационный кадр от сети КСОН:";
+    qDebug() << "Имитатор КСОН: Размер: " << m_send_data.length();
+    qDebug() << "Имитатор КСОН: Содержание: " << m_send_data.toHex();
+
+    // 2. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
+   p_io_buffer->output->mutex.lock();
+   p_io_buffer->output->setData(m_send_data);
+
+   emit message(QString(m_send_data.toHex()), lldbg, sv::log::mtNew);
+
+   p_io_buffer->output->setReady(true);
+   emit p_io_buffer->readyWrite(p_io_buffer->output);
+
+   p_io_buffer->output->mutex.unlock();
+
+   // 3. Запускаем таймер подтверждения "m_conformTimer" с периодом,
+   // равным предельно допустимому времени от посылки нами информационного кадра к системе АПАК,
+   // до получения нами пакета подтверждения от системы АПАК. Это время
+   // задаётся  в конфигурационном файле "config_apak_imitator.json", как параметр протокола имитатора
+   // устройства КСОН:
+   m_conformTimer->start(m_params.conform_interval);
 }
 
 
@@ -515,7 +514,10 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
 // отсчитывающий время от посылки нами информиционного кадра АПАКу, до получения нами
 // от АПАКа пакета подтверждения. Также при этом мы запускаем "таймер посылки m_sendTimer".
 {
-  if(p_is_active) {
+    qDebug() << "Имитатор КСОН: packageFrom_APAK";
+
+    if(p_is_active == false)
+        return;
 
     buffer->mutex.lock();
 
@@ -534,6 +536,8 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
 
     // Определим тип принятого кадра:
     quint16 length = packageFrom_APAK.length();
+
+    qDebug() << "Имитатор КСОН: packageFrom_APAK - длина принятого от АПАК пакета: " << length;
 
     if ( length == 4+4+2+m_params.receive_data_len)
     {// Принят информационный кадр (длина 12 байт):
@@ -599,6 +603,8 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
         QByteArray informBlock (m_params.receive_data_len, 0);
 
         informBlock = packageFrom_APAK.mid (4+4+2, m_params.receive_data_len);
+        m_bitsInformBlock_from_APAK.clear();
+        m_bitsInformBlock_from_APAK.resize(m_params.receive_data_len * 8);
 
         // Конвертируем данные из массива байт "informBlock" в массив бит "m_bitsInformBlock_from_APAK".
         // В переменной цикла "bitNumberInInformBlock" будем хранить текущий номер бита в
@@ -755,6 +761,10 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
             // счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
 
             m_interactionErrorCounter = 0;
+
+            // Выводим сообщение оператору:
+            qDebug() << QString("Имитатор КСОН: Принят пакет подтверждения от АПАК без ошибок");
+            emit message(QString("Имитатор КСОН: Принят пакет подтверждения от АПАК без ошибок"), sv::log::llInfo, sv::log::mtSuccess);
         }
 
         // Запускаем на единственное срабатывание "таймер посылки m_sendTimer" отсчитывающий
@@ -785,12 +795,11 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
       // указанного в протоколе, то испускаем для интерфейсной части сигнал "say"
       // с командой "breakConnection", который приказывает интерфейсной части разорвать
       // соединение с АПАК:
-        qDebug() << QString ("Имитатор КСОН: Выдаём сигнал на разрыв соединения с TCP-клиентом");
-        emit message(QString("Имитатор КСОН: Выдаём сигнал на разрыв соединения с TCP-клиентом"), sv::log::llError, sv::log::mtError);
+        qDebug() << QString ("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом");
+        emit message(QString("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом"), sv::log::llError, sv::log::mtError);
 
         emit p_io_buffer->say("breakConnection");
     }
-  }
 }
 
 
@@ -813,7 +822,9 @@ void apak::SvKsonImitator::noConfirmationPackage(void)
     // соединение с TCP-клиентом:
     if (m_interactionErrorCounter >= m_params.numberOfErrors)
     {
-        qDebug() << "Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения";
+        qDebug() << QString ("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом");
+        emit message(QString("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом"), sv::log::llError, sv::log::mtError);
+
         emit p_io_buffer->say("breakConnection");
     }
 
@@ -842,6 +853,9 @@ void apak::SvKsonImitator::noReceivePackage(void)
     // соединение с TCP-клиентом:
     if (m_interactionErrorCounter >= m_params.numberOfErrors)
     {
+        qDebug() << QString ("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом");
+        emit message(QString("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом"), sv::log::llError, sv::log::mtError);
+
         emit p_io_buffer->say("breakConnection");
     }
 
