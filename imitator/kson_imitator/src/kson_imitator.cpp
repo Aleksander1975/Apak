@@ -518,20 +518,20 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
 
     if(p_is_active == false)
         return;
-
+    qDebug() << "Имитатор КСОН: Отладка затыкания - 1";
     buffer->mutex.lock();
-
+    qDebug() << "Имитатор КСОН: Отладка затыкания - 2";
     if(!buffer->isReady())
     { // Если принятых данных нет, то не в чем и разбираться (выходим из функции):
         return;
     }
-
+    qDebug() << "Имитатор КСОН: Отладка затыкания - 3";
     // Скопируем пришедший от АПАК пакет в массив "packageFrom_APAK":
     QByteArray packageFrom_APAK = QByteArray(buffer->data, buffer->offset);
-
+    qDebug() << "Имитатор КСОН: Отладка затыкания - 4";
     buffer->reset();
     buffer->mutex.unlock();
-
+    qDebug() << "Имитатор КСОН: Отладка затыкания - 5";
     // Разбираемся с принятым от системы АПАК пакетом:
 
     // Определим тип принятого кадра:
@@ -798,7 +798,7 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
         qDebug() << QString ("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом");
         emit message(QString("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом"), sv::log::llError, sv::log::mtError);
 
-        emit p_io_buffer->say("breakConnection");
+        //emit p_io_buffer->say("breakConnection");
     }
 }
 
@@ -825,7 +825,7 @@ void apak::SvKsonImitator::noConfirmationPackage(void)
         qDebug() << QString ("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом");
         emit message(QString("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом"), sv::log::llError, sv::log::mtError);
 
-        emit p_io_buffer->say("breakConnection");
+        //emit p_io_buffer->say("breakConnection");
     }
 
     // 4. Даже если пакета подтверждения не пришло в течении оговоренного в протоколе времени
@@ -856,7 +856,7 @@ void apak::SvKsonImitator::noReceivePackage(void)
         qDebug() << QString ("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом");
         emit message(QString("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом"), sv::log::llError, sv::log::mtError);
 
-        emit p_io_buffer->say("breakConnection");
+        //emit p_io_buffer->say("breakConnection");
     }
 
     // 4. Даже если инфомационного кадра не пришло в течении оговоренного в протоколе времени
