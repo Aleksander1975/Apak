@@ -571,12 +571,12 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
 
   if(p_is_active) {
 
-    buffer->mutex.lock();
-
     if(!buffer->isReady())
     { // Если принятых данных нет, то не в чем и разбираться (выходим из функции):
-        return;
+          return;
     }
+
+    buffer->mutex.lock();
 
     // Скопируем пришедший от КСОН пакет в массив "packageFrom_KSON":
     QByteArray packageFrom_KSON = QByteArray(buffer->data, buffer->offset);
