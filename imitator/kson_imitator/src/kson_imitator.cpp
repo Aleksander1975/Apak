@@ -518,18 +518,22 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
 
     if(p_is_active == false)
         return;
-    qDebug() << "Имитатор КСОН: Отладка затыкания - 1";
-    buffer->mutex.lock();
-    qDebug() << "Имитатор КСОН: Отладка затыкания - 2";
+
     if(!buffer->isReady())
     { // Если принятых данных нет, то не в чем и разбираться (выходим из функции):
         return;
     }
-    qDebug() << "Имитатор КСОН: Отладка затыкания - 3";
+
+    qDebug() << "Имитатор КСОН: Отладка затыкания - 1";
+    buffer->mutex.lock();
+    qDebug() << "Имитатор КСОН: Отладка затыкания - 2";
+
     // Скопируем пришедший от АПАК пакет в массив "packageFrom_APAK":
     QByteArray packageFrom_APAK = QByteArray(buffer->data, buffer->offset);
     qDebug() << "Имитатор КСОН: Отладка затыкания - 4";
+
     buffer->reset();
+
     buffer->mutex.unlock();
     qDebug() << "Имитатор КСОН: Отладка затыкания - 5";
     // Разбираемся с принятым от системы АПАК пакетом:
