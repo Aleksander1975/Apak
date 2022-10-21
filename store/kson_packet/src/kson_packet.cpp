@@ -421,7 +421,7 @@ void apak::SvKsonPacket::sendInformFrame(void)
 // противоположное состояние.
 // Порядок байт во всех полях кадра - от старшего к младшему (bigEndian).
 {
-    qDebug() << "АПАК: Информационный пакет APAK к КСОН: Вызов send()";
+    // qDebug() << "АПАК: Информационный пакет APAK к КСОН: Вызов send()";
 
     if (p_is_active == false)
         return;
@@ -483,7 +483,7 @@ void apak::SvKsonPacket::sendInformFrame(void)
         m_bitsInformBlock_to_KSON.setBit(bitNumberInInformBlock,
                                   (intValueSignal>>bitNumberInSignal) & 0x01 ? true: false);
     }
-     qDebug() << "АПАК: Инфорационный блок информационного кадра от АПАК к КСОН: "<<m_bitsInformBlock_to_KSON;
+    // qDebug() << "АПАК: Инфорационный блок информационного кадра от АПАК к КСОН: "<<m_bitsInformBlock_to_KSON;
 
      // 1.3. Теперь преобразуем массив бит "m_bitsInformBlock_to_KSON" в массив байт:
      // В этом массиве байт будет содержаться информационный блок информационного кадра от АПАК к КСОН.
@@ -501,20 +501,20 @@ void apak::SvKsonPacket::sendInformFrame(void)
      // 1.4. В переменной "m_send_data" формируем информационный кадр для передачи от АПАК к КСОН
      // в соответствии с протоколом обмена.
 
-     // 1.4.1. Вначале, выделим память:
-     m_send_data.fill( 0, 4 + 4 + m_params.send_data_len);
+     // 1.4.1. Вначале, выделим память на первые 3 поля:
+     m_send_data.fill( 0, 4 + 4  + 2);
 
      // 1.4.2. Формируем первое поле информационного кадра:
-     // Первое поле (4 байта) - размер данных (4 + 4 + 2 + m_params.send_data_len = 12 байт): 0x0, 0x0, 0x0, 0х0c
+     // Первое поле (4 байта) - размер данных (4 + 2 + m_params.send_data_len = 8 байт): 0x0, 0x0, 0x0, 0х08
      m_send_data [0] = 0;
      m_send_data [1] = 0;
      m_send_data [2] = 0;
-     m_send_data [3] = 4 + 4 + 2 + m_params.send_data_len;
+     m_send_data [3] = 4 + 2 + m_params.send_data_len;
 
      // 1.4.3. Формируем второе поле информационного кадра:
      // Второе поле (4 байта) - время по данным внешней системы -
      // целое количество секунд с 1 янв. 1970 г.
-     quint64  timeSince_1970 = QDateTime::currentMSecsSinceEpoch() / 1000;
+     quint32  timeSince_1970 = QDateTime::currentMSecsSinceEpoch() / 1000;
 
      m_send_data [4] = (uint8_t) ((timeSince_1970 >> 24) & 0xFF);
      m_send_data [5] = (uint8_t) ((timeSince_1970 >> 16) & 0xFF);
@@ -567,9 +567,10 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
 // отсчитывающий время от посылки нами информиционного кадра КСОНу, до получения нами
 // от сети КСОН пакета подтверждения. Также при этом мы запускаем "таймер посылки m_sendTimer".
 {
-    qDebug() << "АПАК: packageFrom_KSON";
+    // qDebug() << "АПАК: packageFrom_KSON";
 
-  if(p_is_active) {
+    if(p_is_active == false)
+        return;
 
     if(!buffer->isReady())
     { // Если принятых данных нет, то не в чем и разбираться (выходим из функции):
@@ -589,9 +590,9 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
     // Определим тип принятого кадра:
     unsigned length = packageFrom_KSON.length();
 
-    qDebug() << "АПАК: packageFrom_KSON - длина принятого от КСОН пакета: " << length;
+    // qDebug() << "АПАК: packageFrom_KSON - длина принятого от КСОН пакета: " << length;
 
-    if ( length == 43)
+    if ( length == (unsigned)(4 + 4 + 2 + m_params.receive_data_len))
     {// Принят информационный кадр:
 
         // Останавливаем таймер приёма:
@@ -621,18 +622,18 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
         // Согласно протоколу числа типа "float" занимают 4 байта:
         packageFrom_KSON_Stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
 
-        // Первое поле (4 байта) - размер данных. Он должен быть 4+4+2+m_params.receive_data_len (33) = 43 байт
+        // Первое поле (4 байта) - поле размера данных. Оно должно быть 4+2+m_params.receive_data_len (33) = 38 байт
         quint32 dataSize;
         packageFrom_KSON_Stream >> dataSize;
 
-        if (dataSize != (unsigned)(4 + 4 + 2 + m_params.receive_data_len))
-        { // Если поле даннных содержит неверную информацию, то устанавливаем флаг ошибки структуры
+        if (dataSize != (unsigned)(4 + 2 + m_params.receive_data_len))
+        { // Если поле размера даннных содержит неверную информацию, то устанавливаем флаг ошибки структуры
           // информационного кадра в переменной "status":
 
             m_status |= INFO_FRAME_ERROR;
 
-            qDebug () << QString("АПАК: Поле данных в информационном кадре от КСОН содержит неверную информацию: %1").arg(dataSize);
-            emit message(QString("АПАК: Поле данных в информационном кадре от КСОН содержит неверную информацию: %1").arg(dataSize), sv::log::llError, sv::log::mtError);
+            qDebug () << QString("АПАК: Поле размера данных в информационном кадре от КСОН содержит неверную информацию: %1").arg(dataSize);
+            emit message(QString("АПАК: Поле размера данных в информационном кадре от КСОН содержит неверную информацию: %1").arg(dataSize), sv::log::llError, sv::log::mtError);
         }
 
         // Второе поле (4 байта) - время по данным внешней системы -
@@ -795,6 +796,10 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
           // счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
 
             m_interactionErrorCounter = 0;
+
+            // Выводим сообщение оператору:
+            qDebug() << QString("АПАК: Принят информационный кадр от КСОН без ошибок");
+            emit message(QString("АПАК: Принят информационный кадр от КСОН без ошибок"), sv::log::llInfo, sv::log::mtSuccess);
         }
 
         // Сформируем и пошлём пакет подтверждения:
@@ -824,16 +829,16 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
         // Получим значения полей пакета с помощью переменной  "packageFrom_KSON_Stream":
         QDataStream packageFrom_KSON_Stream (&packageFrom_KSON, QIODevice::ReadOnly);
 
-        // Первое поле (4 байта) - размер данных. Он должен быть 4+4+1 = 9 байт
-        quint64 dataSize;
+        // Первое поле (4 байта) - размер данных. Он должен быть 4 + 1 = 5 байт
+        quint32 dataSize;
         packageFrom_KSON_Stream >> dataSize;
 
-        if (dataSize != 9)
-        { // Если поле данных содержит неверную информацию, то
+        if (dataSize != 5)
+        { // Если поле размера данных содержит неверную информацию, то
           // выставляем флаг ошибки пакета подтвердения:
 
-            qDebug () << QString("АПАК: Поле данных в пакете подтверждения от КСОН содержит неверную информацию: %1").arg(dataSize);
-            emit message(QString("АПАК: Поле данных в пакете подтверждения от КСОН содержит неверную информацию: %1").arg(dataSize), sv::log::llError, sv::log::mtError);
+            qDebug () << QString("АПАК: Поле размера данных в пакете подтверждения от КСОН содержит неверную информацию: %1").arg(dataSize);
+            emit message(QString("АПАК: Поле размера данных в пакете подтверждения от КСОН содержит неверную информацию: %1").arg(dataSize), sv::log::llError, sv::log::mtError);
 
             confirmationPackageErrorFlag = true;
         }
@@ -880,8 +885,8 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
             m_interactionErrorCounter = 0;
 
             // Выводим сообщение оператору:
-            qDebug() << QString("АПАК: Принят пакет подтверждения от АПАК без ошибок");
-            emit message(QString("АПАК: Принят пакет подтверждения от АПАК без ошибок"), sv::log::llInfo, sv::log::mtSuccess);
+            qDebug() << QString("АПАК: Принят пакет подтверждения от КСОН без ошибок");
+            emit message(QString("АПАК: Принят пакет подтверждения от КСОН без ошибок"), sv::log::llInfo, sv::log::mtSuccess);
         }
 
         // Запускаем на единственное срабатывание "таймер посылки m_sendTimer" отсчитывающий
@@ -893,28 +898,32 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
         m_sendTimer->start(m_params.send_interval);
     } // Если принят пакет подтверждения
 
-    if ( length != 9 && length != 43)
+    if ( length != 9 && length != (unsigned)(4 + 4 + 2 + m_params.receive_data_len))
     { // Если размер принятого кадра != 9 (размер пакета подтверждения) и
-        // размер принятого кадра != 43 (размер информационного кадра)
-
-        // Выдаём сообщение об ошибке:
-        emit message(QString("АПАК: Длина принятого от КСОН сообщения равна %1").arg(length), sv::log::llError, sv::log::mtError);
-        qDebug() << QString("АПАК: Длина принятого от КСОН сообщения равна %1").arg(length);
+        // размер принятого кадра != 4 + 4 + 2 + m_params.receive_data_len (размер информационного кадра)
 
         // Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
         m_interactionErrorCounter++;
+
+        // Выдаём сообщение об ошибке:
+        emit message(QString("АПАК: Длина принятого от КСОН сообщения равна %1. Количество идущих подряд ошибок взаимодействия : %2").arg(length).arg(m_interactionErrorCounter), sv::log::llError, sv::log::mtError);
+        qDebug() << QString("АПАК: Длина принятого от КСОН сообщения равна %1. Количество идущих подряд ошибок взаимодействия : %2").arg(length).arg(m_interactionErrorCounter);
     } // Если размер принятых данных не совпадает ни с размером информационного кадра
     // ни с размером пакета подтверждения
 
+    // Если счётчик подряд идущих ошибок взаимодействия АПАК с КСОН больше значения
+    // указанного в протоколе:
     if (m_interactionErrorCounter >= m_params.numberOfErrors)
-    { // Если счётчик подряд идущих ошибок взаимодействия АПАК с КСОН больше значения
-      // указанного в протоколе, то испускаем для интерфейсной части сигнал "say"
-      // с командой "breakConnection", который приказывает интерфейсной части разорвать
-      // соединение с сервером КСОН:
+    {
         qDebug() << QString ("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером");
         emit message(QString("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером"), sv::log::llError, sv::log::mtError);
 
+        // Испускаем для интерфейсной части сигнал "say" с командой "breakConnection",
+        // который приказывает интерфейсной части разорвать соединение с сервером КСОН:
         emit p_io_buffer->say("breakConnection");
+
+        // Сбрасываем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
+        m_interactionErrorCounter = 0;
     }
 
     if(m_state_signal)
@@ -925,7 +934,6 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
        m_state_signal->setValue(int(1));
     }
     // p_last_parsed_time = QDateTime::currentDateTime();
-  }
 }
 
 
@@ -934,24 +942,27 @@ void apak::SvKsonPacket::noConfirmationPackage(void)
 // посылки нами информационного кадра к сети КСОН, до получения нами пакета подтверждения от сети КСОН
 // пакет подтверждения так и не пришёл.
 {
-    // 1. Выводим в утилиту "logview" и на консоль информацию о том, что пакет
-    // подтверждения не получен:
-    emit message(QString("АПАК: Пакет подтверждения от КСОН за время: %1 не получен").arg(m_params.conform_interval), sv::log::llError, sv::log::mtError);
-    qDebug() << QString("АПАК: Пакет подтверждения от КСОН за время: %1 не получен").arg(m_params.conform_interval);
-
-    // 2. Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
+    // 1. Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
     m_interactionErrorCounter++;
 
+    // 2. Выводим в утилиту "logview" и на консоль информацию о том, что пакет
+    // подтверждения не получен:
+    emit message(QString("АПАК: Пакет подтверждения от КСОН за время: %1 не получен. Количество идущих подряд ошибок взаимодействия : %2").arg(m_params.conform_interval).arg(m_interactionErrorCounter), sv::log::llError, sv::log::mtError);
+    qDebug() << QString("АПАК: Пакет подтверждения от КСОН за время: %1 не получен. Количество идущих подряд ошибок взаимодействия : %2").arg(m_params.conform_interval).arg(m_interactionErrorCounter);
+
     // 3. Если счётчик подряд идущих ошибок взаимодействия АПАК с КСОН больше значения
-    // указанного в протоколе, то испускаем для интерфейсной части сигнал "say"
-    // с командой "breakConnection", который приказывает интерфейсной части разорвать
-    // соединение с сервером КСОН:
+    // указанного в протоколе:
     if (m_interactionErrorCounter >= m_params.numberOfErrors)
     {
         qDebug() << QString ("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером");
         emit message(QString("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером"), sv::log::llError, sv::log::mtError);
 
+        // Испускаем для интерфейсной части сигнал "say" с командой "breakConnection",
+        // который приказывает интерфейсной части разорвать соединение с сервером КСОН:
         emit p_io_buffer->say("breakConnection");
+
+        // Сбрасываем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
+        m_interactionErrorCounter = 0;
     }
 
     // 4. Даже если пакета подтверждения не пришло в течении оговоренного в протоколе времени
@@ -965,21 +976,27 @@ void apak::SvKsonPacket::noReceivePackage(void)
 // Эта функция вызывается в том случае, если в течении предельно допустимого времени от
 // сети КСОН не пришёл инфомационный кадр.
 {
-    // 1. Выводим в утилиту "logview" и на консоль информацию о том, что информационный кадр от КСОН
-    // не получен:
-    emit message(QString("АПАК: Информационный кадр от КСОН за время: %1 не получен").arg(m_params.receive_interval), sv::log::llError, sv::log::mtError);
-    qDebug() << QString("АПАК: Информационный кадр от КСОН за время: %1 не получен").arg(m_params.receive_interval);
-
-    // 2. Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
+    // 1. Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
     m_interactionErrorCounter++;
 
+    // 2. Выводим в утилиту "logview" и на консоль информацию о том, что информационный кадр от КСОН
+    // не получен:
+    emit message(QString("АПАК: Информационный кадр от КСОН за время: %1 не получен. Количество идущих подряд ошибок взаимодействия : %2").arg(m_params.receive_interval).arg(m_interactionErrorCounter), sv::log::llError, sv::log::mtError);
+    qDebug() << QString("АПАК: Информационный кадр от КСОН за время: %1 не получен. Количество идущих подряд ошибок взаимодействия : %2").arg(m_params.receive_interval).arg(m_interactionErrorCounter);
+
     // 3. Если счётчик подряд идущих ошибок взаимодействия АПАК с КСОН больше значения
-    // указанного в протоколе, то испускаем для интерфейсной части сигнал "say"
-    // с командой "breakConnection", который приказывает интерфейсной части разорвать
-    // соединение с сервером КСОН:
+    // указанного в протоколе:
     if (m_interactionErrorCounter >= m_params.numberOfErrors)
     {
+        qDebug() << QString ("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером");
+        emit message(QString("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером"), sv::log::llError, sv::log::mtError);
+
+        // Испускаем для интерфейсной части сигнал "say" с командой "breakConnection",
+        // который приказывает интерфейсной части разорвать соединение с сервером КСОН:
         emit p_io_buffer->say("breakConnection");
+
+        // Сбрасываем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
+        m_interactionErrorCounter = 0;
     }
 
     // 4. Даже если инфомационного кадра не пришло в течении оговоренного в протоколе времени
@@ -1004,15 +1021,15 @@ void apak::SvKsonPacket::sendConfirmationPackage(void)
     m_send_data.fill( 0, 9);
 
     // 2. Формируем первое поле пакета подтверждения:
-    // Первое поле (4 байта) - размер данных (4 + 4 + 1 = 9 байт): 0x0, 0x0, 0x0, 0х09
+    // Первое поле (4 байта) - размер данных, то есть всех полей пакета,
+    // кроме поля размера данных (4 + 1 = 5 байт): 0x0, 0x0, 0x0, 0х05
     m_send_data [0] = 0;
     m_send_data [1] = 0;
     m_send_data [2] = 0;
-    m_send_data [3] = 0x09;
+    m_send_data [3] = 0x05;
 
     // 3. Формируем второе поле пакета подтверждения - время, которое должно повторять
     // время в информационном кадре от КСОН, сохранённое нами в переменной "m_packetTimeFrom_KSON":
-
     m_send_data [4] = (uint8_t) ((m_packetTimeFrom_KSON >> 24) & 0xFF);
     m_send_data [5] = (uint8_t) ((m_packetTimeFrom_KSON >> 16) & 0xFF);
     m_send_data [6] = (uint8_t) ((m_packetTimeFrom_KSON >>  8) & 0xFF);
@@ -1023,7 +1040,7 @@ void apak::SvKsonPacket::sendConfirmationPackage(void)
     m_send_data [8] = m_status;
 
 
-    qDebug() <<"АПАК: Пакет подтверждения (в окончательном виде) от АПАК к КСОН:";
+    qDebug() <<"АПАК: Пакет подтверждения от АПАК к КСОН:";
     qDebug() <<"Размер: " << m_send_data.length();
     qDebug() <<"Содержание: " << m_send_data.toHex();
 
