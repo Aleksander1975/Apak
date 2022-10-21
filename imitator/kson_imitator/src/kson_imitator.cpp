@@ -272,7 +272,7 @@ void apak::SvKsonImitator::sendInformFrame(void)
 // Данные кадра (блок параметрической информации) - 33 байта ( задаётся в "params.send_data_len")
 // Порядок байт во всех полях кадра - от старшего к младшему (bigEndian).
 {
-    qDebug () << "\n" << QString("Имитатор КСОН: Информационный пакет КСОН к APAK: Вызов send()");
+    // qDebug () << "\n" << QString("Имитатор КСОН: Информационный пакет КСОН к APAK: Вызов send()");
 
     // Останавливаем "таймер посылки" m_sendTimer:
     m_sendTimer->stop();
@@ -280,7 +280,7 @@ void apak::SvKsonImitator::sendInformFrame(void)
     if(p_is_active == false)
         return;
 
-    // В переменной "m_relevanceСoncrete_by_group_to_APAK" формируем битовый массив,
+    // 1. В переменной "m_relevanceСoncrete_by_group_to_APAK" формируем битовый массив,
     // который для каждого номера группы сигналов (номер - это индекс в этом массиве),
     // определяет актуальны ли её сигналы (false - не актуальны, true - актуальны).
 
@@ -288,61 +288,67 @@ void apak::SvKsonImitator::sendInformFrame(void)
     // данной группы в файле сигналов для устройства КСОН.
     m_relevanceConcrete_by_group_to_APAK = m_relevance_by_group_to_APAK;
 
-    // В переменной "m_send_data" формируем информационный кадр от имитатора сети КСОН
+    // 2. В переменной "m_send_data" формируем информационный кадр от имитатора сети КСОН
     // в систему АПАК в соответствии с протоколом обмена.
     // Вначале, выделим память и заполним первые два поля:
     m_send_data.fill( 0, 4 + 4);
 
-    // 1.1. Формируем первое поле информационного кадра:
-    // Первое поле (4 байта) - размер данных (43 байта): 0x0, 0x0, 0x0, 0х2b
+    // 3. Формируем первое поле информационного кадра:
+    // Первое поле (4 байта) - размер данных, то есть всех полей информационного кадра,
+    // кроме поля размера данных (4 + 2 + m_params.send_data_len = 39 байт): 0x0, 0x0, 0x0, 0х27
     m_send_data [0] = 0;
     m_send_data [1] = 0;
     m_send_data [2] = 0;
-    m_send_data [3] = 0x2b;
+    m_send_data [3] = 4 + 2 + m_params.send_data_len;
 
-    // 1.2. Формируем второе поле информационного кадра:
+    // 4. Формируем второе поле информационного кадра:
     // Второе поле (4 байта) - время по данным внешней системы -
     // целое количество секунд с 1 янв. 1970 г.
-    quint64  timeSince_1970 = QDateTime::currentMSecsSinceEpoch() / 1000;
+    quint32 timeSince_1970 = QDateTime::currentMSecsSinceEpoch() / 1000;
 
     m_send_data [4] = (uint8_t) ((timeSince_1970 >> 24) & 0xFF);
     m_send_data [5] = (uint8_t) ((timeSince_1970 >> 16) & 0xFF);
     m_send_data [6] = (uint8_t) ((timeSince_1970 >>  8) & 0xFF);
     m_send_data [7] = (uint8_t) (timeSince_1970 & 0xFF);
 
-    // 1.3. Формируем поле "данные" информационного кадра. Это поле представляет собой
-    // блок параметрической информации. Будем формировать его в переменной "dataFrame":
-    QByteArray dataFrame;// ОТЛАДКА(m_params.send_data_len, 0);
+    // 5. Занесём время формирования информационного кадра в переменную "m_packetTimeTo_APAK",
+    // чтобы при получении пакета подтверждения проверить, что время в пакете подтверждения совпадает
+    // c этим временем:
+    m_packetTimeTo_APAK = timeSince_1970;
 
-    // Переменную "dataFrame" будем формировать с помощью переменной "dataFrameStream":
+    // 6. Формируем поле "данные" информационного кадра. Это поле представляет собой
+    // блок параметрической информации. Будем формировать его в переменной "dataFrame":
+    QByteArray dataFrame (m_params.send_data_len, 0);
+
+    // 6.1. Переменную "dataFrame" будем формировать с помощью переменной "dataFrameStream":
     QDataStream dataFrameStream(&dataFrame, QIODevice::WriteOnly);
 
-    // Согласно протоколу числа типа "float" должны занимать 4 байта:
+    // 6.2.Согласно протоколу числа типа "float" должны занимать 4 байта:
     dataFrameStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
 
 
-    // Формируем информационный блок кадра, передаваемого от КСОН к АПАК:
+    // 6.3. Формируем информационный блок кадра, передаваемого от КСОН к АПАК:
     for (quint8 signalNumberInDataFrame = 0; signalNumberInDataFrame < m_signals_to_APAK.size();
              signalNumberInDataFrame++)
     { // Проходим по всем номерам параметров (сигналов) в блоке:
 
-        // 1.3.1. Получаем указатель на сигнал:
+        // 6.3.1. Получаем указатель на сигнал:
         modus::SvSignal* signal = m_signals_to_APAK [signalNumberInDataFrame];
 
-        // 1.3.2. Получаем параметры сигнала:
+        // 6.3.2. Получаем параметры сигнала:
         apak::SignalParams signal_params = m_params_by_signal_to_APAK.value (signal);
 
-        // 1.3.3. Проверим актуальна ли информация, содержащаяся в сигнале:
+        // 6.3.3. Проверим актуальна ли информация, содержащаяся в сигнале:
         if(!signal->value().isValid() || signal->value().isNull())
         {
-            // 1.3.3.1. Информация в сигнале не актуальна ->
+            // 6.3.3.1. Информация в сигнале не актуальна ->
 
-            // 1.3.3.1.1.Сбросим в "false" соответствующий группе этого сигнала бит в
+            // 6.3.3.1.1.Сбросим в "false" соответствующий группе этого сигнала бит в
             // массиве "m_relevanceСoncrete_by_group_to_APAK", то есть объявим сигналы
             // этой группы неактуальными:
             m_relevanceConcrete_by_group_to_APAK [signal_params.group] = false;
 
-            // 1.3.3.1.2. Выясним тип сигнала ("boolean", "unsigned", "false") и запишем в
+            // 6.3.3.1.2. Выясним тип сигнала ("boolean", "unsigned", "false") и запишем в
             // поток НУЛЕВОЕ значение этого типа.
 
             // Получаем тип сигнала:
@@ -369,21 +375,21 @@ void apak::SvKsonImitator::sendInformFrame(void)
             continue;
         } // if(!signal->value().isValid()
 
-        // 1.3.4. Получаем тип сигнала и попытаемся преобразовать содержимое
+        // 6.3.4. Получаем тип сигнала и попытаемся преобразовать содержимое
         // переменной "signalValue" к этому типу:
         QString type = signal_params.data_type;
 
         if ( type.compare ("boolean", Qt::CaseInsensitive) == 0)
-        {  // 1.3.4.1. Этот сигнал представляет тип "boolean" и, в случае КСОН,
+        {  // 6.3.4.1. Этот сигнал представляет тип "boolean" и, в случае КСОН,
            // занимает младший бит в байте (остальные биты в этом
            // байте не важны). Поэтому мы будем записывать в поток целый байт.
 
             bool booleanSignal;
 
-            // 1.3.4.1.1. Теперь переведём информацию в сигнале в тип "boolean":
+            // 6.3.4.1.1. Теперь переведём информацию в сигнале в тип "boolean":
             booleanSignal = signal->value().toBool();
 
-            // 1.3.4.1.2. Выводим значение сигнала в поток:
+            // 6.3.4.1.2. Выводим значение сигнала в поток:
             if (booleanSignal == true)
                 dataFrameStream << (quint8) 0x01;
             else
@@ -391,64 +397,64 @@ void apak::SvKsonImitator::sendInformFrame(void)
         } // Этот сигнал представляет тип "boolean"
 
         if ( type.compare ("float", Qt::CaseInsensitive) == 0)
-        { // 1.3.4.2. Этот сигнал представляет тип "float" и занимает 4 байта, порядок которых: big-endian.
+        { // 6.3.4.2. Этот сигнал представляет тип "float" и занимает 4 байта, порядок которых: big-endian.
 
             bool ok;
             float floatSignal;
 
-            // 1.3.4.2.1. Теперь проверим представима ли информация в сигнале числом типа "float":
+            // 6.3.4.2.1. Теперь проверим представима ли информация в сигнале числом типа "float":
             floatSignal = signal->value().toFloat(&ok);
 
             if(ok == false )
             {
-                // 1.3.4.2.2. Информация в сигнале не представима числом типа "float" ->
-                // 1.3.4.2.2.1. Cбросим в "false" соответствующий группе этого сигнала бит в массиве
+                // 6.3.4.2.2. Информация в сигнале не представима числом типа "float" ->
+                // 6.3.4.2.2.1. Cбросим в "false" соответствующий группе этого сигнала бит в массиве
                 // "m_relevanceСoncrete_by_group_to_APAK", то есть объявим сигналы этой группы неактуальными:
                 m_relevanceConcrete_by_group_to_APAK [signal_params.group] = false;
 
-                // 1.3.4.2.2.2. Запишем в поток НУЛЕВОЕ значение типа "float":
+                // 6.3.4.2.2.2. Запишем в поток НУЛЕВОЕ значение типа "float":
                 dataFrameStream << (float) 0;
             }
             else
             {
-                // 1.3.4.2.3. Выводим значение сигнала в поток:
+                // 6.3.4.2.3. Выводим значение сигнала в поток:
                 dataFrameStream << floatSignal;
             }
         } // Этот сигнал представляет тип "float" и занимает 4 байта
 
         if ( type.compare ("unsigned", Qt::CaseInsensitive) == 0)
-        { // 1.3.4.3. Этот сигнал представляет тип "unsigned" и занимает 4 байта, порядок которых: big-endian.
+        { // 6.3.4.3. Этот сигнал представляет тип "unsigned" и занимает 4 байта, порядок которых: big-endian.
 
             bool ok;
             unsigned unsignedSignal;
 
-            // 1.3.4.3.1 Теперь проверим представима ли информация в сигнале числом типа unsigned:
+            // 6.3.4.3.1 Теперь проверим представима ли информация в сигнале числом типа unsigned:
             unsignedSignal = signal->value().toUInt (&ok);
 
             if(ok == false )
             {
-                // 1.3.4.3.2.Информация в сигнале не представима числом типа "unsigned" ->
-                // 1.3.4.3.2.1. Cбросим в "false" соответствующий группе этого сигнала бит в массиве
+                // 6.3.4.3.2.Информация в сигнале не представима числом типа "unsigned" ->
+                // 6.3.4.3.2.1. Cбросим в "false" соответствующий группе этого сигнала бит в массиве
                 // "m_relevanceСoncrete_by_group_to_APAK", то есть объявим сигналы этой группы неактуальными:
                 m_relevanceConcrete_by_group_to_APAK [signal_params.group] = false;
 
-                // 1.3.4.3.2.2. Запишем в поток НУЛЕВОЕ значение типа "unsigned":
+                // 6.3.4.3.2.2. Запишем в поток НУЛЕВОЕ значение типа "unsigned":
                 dataFrameStream << (unsigned) 0;
             }
             else
             {
-                // 1.3.4.3.3. Выводим значение сигнала в поток:
+                // 6.3.4.3.3. Выводим значение сигнала в поток:
                 dataFrameStream << unsignedSignal;
             }
        } // Этот сигнал представляет тип "unsigned" и занимает 4 байта
     } // for
 
-    // 1.4. Формируем поле "доступность групп". Это поле представляет собой два байта (сначала -
+    // 6.4. Формируем поле "доступность групп". Это поле представляет собой два байта (сначала -
     // старший, затем - младший). При этом: младший бит младшего байта - соответветствует
     // нулевой группе. Данные для поля "доступность групп" формируем в  массиве бит
     // "m_relevanceConcrete_by_group_to_APAK".
 
-    // 1.4.1. Конвертируем данные из массива бит "m_relevanceConcrete_by_group_to_APAK" в массив байт
+    // 6.4.1. Конвертируем данные из массива бит "m_relevanceConcrete_by_group_to_APAK" в массив байт
     // "relevanceGroup_Byte_to_APAK".
     // Для начала заполняем массив байт "relevanceGroup_Byte_to_APAK" нулями:
     QByteArray relevanceGroup_Byte_to_APAK(2, 0);
@@ -462,7 +468,7 @@ void apak::SvKsonImitator::sendInformFrame(void)
                      ((m_relevanceConcrete_by_group_to_APAK [bitNumberIn_relevance_by_group_to_APAK] ? 1 : 0) << (bitNumberIn_relevance_by_group_to_APAK % 8));
     }
 
-    // 1.4.2. Перепишем данные из массива байт "relevanceGroup_Byte_to_APAK" в 8-ой и 9-ый байты массива
+    // 6.4.2. Перепишем данные из массива байт "relevanceGroup_Byte_to_APAK" в 8-ой и 9-ый байты массива
     // "m_send_data". При этом 0-ой байт массива байт "relevanceGroup_Byte_to_APAK" перепишем в 9-ый байт массива
     // "m_send_data", a 1-ый байт массива "relevanceGroup_Byte_to_APAK" перепишем в 8-ой байт массива
     // "m_send_data", так как во всех полях кадра "m_send_data" порядок байт от
@@ -470,7 +476,7 @@ void apak::SvKsonImitator::sendInformFrame(void)
     m_send_data [8] = relevanceGroup_Byte_to_APAK[1];
     m_send_data [9] = relevanceGroup_Byte_to_APAK[0];
 
-    // 1.5. Добавим к трём полям информационного кадра, уже содержащимся в массиве "m_send_data",
+    // 6.5. Добавим к трём полям информационного кадра, уже содержащимся в массиве "m_send_data",
     // четвёртое - блок параметрической информации, сформированный нами в массиве "dataFrame".
     m_send_data.append (dataFrame);
 
@@ -484,7 +490,7 @@ void apak::SvKsonImitator::sendInformFrame(void)
     qDebug() << "Имитатор КСОН: Размер: " << m_send_data.length();
     qDebug() << "Имитатор КСОН: Содержание: " << m_send_data.toHex();
 
-    // 2. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
+    // 7. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
    p_io_buffer->output->mutex.lock();
    p_io_buffer->output->setData(m_send_data);
 
@@ -495,7 +501,7 @@ void apak::SvKsonImitator::sendInformFrame(void)
 
    p_io_buffer->output->mutex.unlock();
 
-   // 3. Запускаем таймер подтверждения "m_conformTimer" с периодом,
+   // 8. Запускаем таймер подтверждения "m_conformTimer" с периодом,
    // равным предельно допустимому времени от посылки нами информационного кадра к системе АПАК,
    // до получения нами пакета подтверждения от системы АПАК. Это время
    // задаётся  в конфигурационном файле "config_apak_imitator.json", как параметр протокола имитатора
@@ -514,7 +520,7 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
 // отсчитывающий время от посылки нами информиционного кадра АПАКу, до получения нами
 // от АПАКа пакета подтверждения. Также при этом мы запускаем "таймер посылки m_sendTimer".
 {
-    qDebug() << "Имитатор КСОН: packageFrom_APAK";
+    // qDebug() << "Имитатор КСОН: packageFrom_APAK";
 
     if(p_is_active == false)
         return;
@@ -524,24 +530,20 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
         return;
     }
 
-    qDebug() << "Имитатор КСОН: Отладка затыкания - 1";
     buffer->mutex.lock();
-    qDebug() << "Имитатор КСОН: Отладка затыкания - 2";
 
     // Скопируем пришедший от АПАК пакет в массив "packageFrom_APAK":
     QByteArray packageFrom_APAK = QByteArray(buffer->data, buffer->offset);
-    qDebug() << "Имитатор КСОН: Отладка затыкания - 4";
 
     buffer->reset();
 
     buffer->mutex.unlock();
-    qDebug() << "Имитатор КСОН: Отладка затыкания - 5";
-    // Разбираемся с принятым от системы АПАК пакетом:
 
+    // Разбираемся с принятым от системы АПАК пакетом:
     // Определим тип принятого кадра:
     quint16 length = packageFrom_APAK.length();
 
-    qDebug() << "Имитатор КСОН: packageFrom_APAK - длина принятого от АПАК пакета: " << length;
+    // qDebug() << "Имитатор КСОН: packageFrom_APAK - длина принятого от АПАК пакета: " << length;
 
     if ( length == 4+4+2+m_params.receive_data_len)
     {// Принят информационный кадр (длина 12 байт):
@@ -565,18 +567,18 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
         // Согласно протоколу числа типа "float" занимают 4 байта:
         packageFrom_APAK_Stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
 
-        // Первое поле (4 байта) - размер данных. Он должен быть 4+4+2+m_params.data_len = 43 байт
-        unsigned dataSize;
+        // Первое поле (4 байта) - размер данных. Он должен быть 4+2+m_params.data_len = 38 байт
+        quint32 dataSize;
         packageFrom_APAK_Stream >> dataSize;
 
-        if (dataSize != unsigned(4+4+2+m_params.receive_data_len))
-        { // Если поле даннных содержит неверную информацию, то устанавливаем флаг ошибки структуры
+        if (dataSize != unsigned(4+2+m_params.receive_data_len))
+        { // Если поле размера даннных содержит неверную информацию, то устанавливаем флаг ошибки структуры
           // информационного кадра в переменной "status":
 
             m_status |= INFO_FRAME_ERROR;
 
-            qDebug () << QString("Имитатор КСОН: Поле данных в информационном кадре от АПАК содержит неверную информацию: %1").arg(dataSize);
-            emit message(QString("Имитатор КСОН: Поле данных в информационном кадре от АПАК содержит неверную информацию: %1").arg(dataSize), sv::log::llError, sv::log::mtError);
+            qDebug () << QString("Имитатор КСОН: Поле размера данных в информационном кадре от АПАК содержит неверную информацию: %1").arg(dataSize);
+            emit message(QString("Имитатор КСОН: Поле размера данных в информационном кадре от АПАК содержит неверную информацию: %1").arg(dataSize), sv::log::llError, sv::log::mtError);
         }
 
         // Второе поле (4 байта) - время по данным внешней системы -
@@ -681,6 +683,11 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
           // счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
 
             m_interactionErrorCounter = 0;
+
+            // Выводим сообщение оператору:
+            qDebug() << QString("Имитатор КСОН: Принят информационный кадр от АПАК без ошибок");
+            emit message(QString("Имитатор КСОН: Принят информационный кадр от АПАК без ошибок"), sv::log::llInfo, sv::log::mtSuccess);
+
         }
 
         // Сформируем и пошлём пакет подтверждения:
@@ -710,16 +717,16 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
         // Получим значения полей пакета с помощью переменной  "packageFrom_APAK_Stream":
         QDataStream packageFrom_APAK_Stream (&packageFrom_APAK, QIODevice::ReadOnly);
 
-        // Первое поле (4 байта) - размер данных. Он должен быть 4+4+1 = 9 байт
-        quint64 dataSize;
+        // Первое поле (4 байта) - поле размера данных. Оно должно быть 4 + 1 = 5 байт
+        quint32 dataSize;
         packageFrom_APAK_Stream >> dataSize;
 
-        if (dataSize != 9)
-        { // Если поле данных содержит неверную информацию, то
+        if (dataSize != 5)
+        { // Если поле размера данных содержит неверную информацию, то
           // выставляем флаг ошибки пакета подтвердения:
 
-            qDebug () << QString("Имитатор КСОН: Поле данных в пакете подтверждения от КСОН содержит неверную информацию: %1").arg(dataSize);
-            emit message(QString("Имитатор КСОН: Поле данных в пакете подтверждения от КСОН содержит неверную информацию: %1").arg(dataSize), sv::log::llError, sv::log::mtError);
+            qDebug () << QString("Имитатор КСОН: Поле размера данных в пакете подтверждения от КСОН содержит неверную информацию: %1").arg(dataSize);
+            emit message(QString("Имитатор КСОН: Поле размера данных в пакете подтверждения от КСОН содержит неверную информацию: %1").arg(dataSize), sv::log::llError, sv::log::mtError);
 
             confirmationPackageErrorFlag = true;
         }
@@ -785,24 +792,28 @@ void apak::SvKsonImitator::packageFrom_APAK(modus::BUFF* buffer)
     { // Если размер принятого кадра != 9 (размер пакета подтверждения) и
         // размер принятого кадра != 4+4+2+m_params.data_len (размер информационного кадра)
 
-        // Выдаём сообщение об ошибке:
-        emit message(QString("Имитатор КСОН: Длина принятого от КСОН сообщения равна %1").arg(length), sv::log::llError, sv::log::mtError);
-        qDebug() << QString("Имитатор КСОН: Длина принятого от КСОН сообщения равна %1").arg(length);
-
         // Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
         m_interactionErrorCounter++;
+
+        // Выдаём сообщение об ошибке:
+        emit message(QString("Имитатор КСОН: Длина принятого от КСОН сообщения равна %1. Количество идущих подряд ошибок взаимодействия : %2").arg(length).arg(m_interactionErrorCounter), sv::log::llError, sv::log::mtError);
+        qDebug() << QString("Имитатор КСОН: Длина принятого от КСОН сообщения равна %1. Количество идущих подряд ошибок взаимодействия : %2").arg(length).arg(m_interactionErrorCounter);
     } // Если размер принятого пакета не соответствует ни длине информационного кадра (12 байт)
       // ни длине пакета подтверждения (9 байт).
 
+    // Если счётчик подряд идущих ошибок взаимодействия АПАК с КСОН больше значения
+    // указанного в протоколе:
     if (m_interactionErrorCounter >= m_params.numberOfErrors)
-    { // Если счётчик подряд идущих ошибок взаимодействия АПАК с КСОН больше значения
-      // указанного в протоколе, то испускаем для интерфейсной части сигнал "say"
-      // с командой "breakConnection", который приказывает интерфейсной части разорвать
-      // соединение с АПАК:
+    {
         qDebug() << QString ("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом");
         emit message(QString("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом"), sv::log::llError, sv::log::mtError);
 
-        //emit p_io_buffer->say("breakConnection");
+        // Испускаем для интерфейсной части сигнал "say" с командой "breakConnection",
+        // который приказывает интерфейсной части разорвать соединение АПАК:
+        emit p_io_buffer->say("breakConnection");
+
+        // Сбрасываем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
+        m_interactionErrorCounter = 0;
     }
 }
 
@@ -812,24 +823,27 @@ void apak::SvKsonImitator::noConfirmationPackage(void)
 // посылки нами информационного кадра к АПАК, до получения нами пакета подтверждения от АПАК
 // пакет подтверждения так и не пришёл.
 {
-    // 1. Выводим в утилиту "logview" и на консоль информацию о том, что пакет
-    // подтверждения не получен:
-    emit message(QString("Имитатор КСОН: Пакет подтверждения от АПАК за время: %1 не получен").arg(m_params.conform_interval), sv::log::llError, sv::log::mtError);
-    qDebug() << QString("Имитатор КСОН: Пакет подтверждения от АПАК за время: %1 не получен").arg(m_params.conform_interval);
-
-    // 2. Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
+    // 1. Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
     m_interactionErrorCounter++;
 
+    // 2. Выводим в утилиту "logview" и на консоль информацию о том, что пакет
+    // подтверждения не получен:
+    emit message(QString("Имитатор КСОН: Пакет подтверждения от АПАК за время: %1 не получен. Количество идущих подряд ошибок взаимодействия : %2").arg(m_params.conform_interval).arg(m_interactionErrorCounter), sv::log::llError, sv::log::mtError);
+    qDebug() << QString("Имитатор КСОН: Пакет подтверждения от АПАК за время: %1 не получен. Количество идущих подряд ошибок взаимодействия : %2").arg(m_params.conform_interval).arg(m_interactionErrorCounter);
+
     // 3. Если счётчик подряд идущих ошибок взаимодействия АПАК с КСОН больше значения
-    // указанного в протоколе, то испускаем для интерфейсной части сигнал "say"
-    // с командой "breakConnection", который приказывает интерфейсной части разорвать
-    // соединение с TCP-клиентом:
+    // указанного в протоколе:
     if (m_interactionErrorCounter >= m_params.numberOfErrors)
     {
         qDebug() << QString ("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом");
         emit message(QString("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом"), sv::log::llError, sv::log::mtError);
 
-        //emit p_io_buffer->say("breakConnection");
+        // Испускаем для интерфейсной части сигнал "say" с командой "breakConnection",
+        // который приказывает интерфейсной части разорвать соединение АПАК:
+        emit p_io_buffer->say("breakConnection");
+
+        // Сбрасываем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
+        m_interactionErrorCounter = 0;
     }
 
     // 4. Даже если пакета подтверждения не пришло в течении оговоренного в протоколе времени
@@ -843,24 +857,27 @@ void apak::SvKsonImitator::noReceivePackage(void)
 // Эта функция вызывается в том случае, если в течении предельно допустимого времени от
 // сети КСОН не пришёл инфомационный кадр.
 {
-    // 1. Выводим в утилиту "logview" и на консоль информацию о том, что информационный кадр от КСОН
-    // не получен:
-    emit message(QString("Имитатор КСОН: Информационный кадр от АПАК за время: %1 не получен").arg(m_params.receive_interval), sv::log::llError, sv::log::mtError);
-    qDebug() << QString("Имитатор КСОН: Информационный кадр от АПАК за время: %1 не получен").arg(m_params.receive_interval);
-
-    // 2. Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
+    // 1. Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
     m_interactionErrorCounter++;
 
+    // 2. Выводим в утилиту "logview" и на консоль информацию о том, что информационный кадр от КСОН
+    // не получен:
+    emit message(QString("Имитатор КСОН: Информационный кадр от АПАК за время: %1 не получен. Количество идущих подряд ошибок взаимодействия : %2").arg(m_params.receive_interval).arg(m_interactionErrorCounter), sv::log::llError, sv::log::mtError);
+    qDebug() << QString("Имитатор КСОН: Информационный кадр от АПАК за время: %1 не получен. Количество идущих подряд ошибок взаимодействия : %2").arg(m_params.receive_interval).arg(m_interactionErrorCounter);
+
     // 3. Если счётчик подряд идущих ошибок взаимодействия АПАК с КСОН больше значения
-    // указанного в протоколе, то испускаем для интерфейсной части сигнал "say"
-    // с командой "breakConnection", который приказывает интерфейсной части разорвать
-    // соединение с TCP-клиентом:
+    // указанного в протоколе:
     if (m_interactionErrorCounter >= m_params.numberOfErrors)
     {
         qDebug() << QString ("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом");
         emit message(QString("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом"), sv::log::llError, sv::log::mtError);
 
-        //emit p_io_buffer->say("breakConnection");
+        // Испускаем для интерфейсной части сигнал "say" с командой "breakConnection",
+        // который приказывает интерфейсной части разорвать соединение АПАК:
+        emit p_io_buffer->say("breakConnection");
+
+        // Сбрасываем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
+        m_interactionErrorCounter = 0;
     }
 
     // 4. Даже если инфомационного кадра не пришло в течении оговоренного в протоколе времени
@@ -874,7 +891,7 @@ void apak::SvKsonImitator::sendConfirmationPackage(void)
 // Формирование и посылка пакета подтверждения.
 // На данный момент - формат пакета подтверждения не ясен, поэтому будем реализовывать следующий
 // формат:
-// Размер данных - 4 байта
+// Размер данных пакета - 4 байта
 // Время - 4 байта
 // Статус - 1 байт
 {
@@ -885,11 +902,12 @@ void apak::SvKsonImitator::sendConfirmationPackage(void)
     m_send_data.fill( 0, 9);
 
     // 2. Формируем первое поле пакета подтверждения:
-    // Первое поле (4 байта) - размер данных (4 + 4 + 1 = 9 байт): 0x0, 0x0, 0x0, 0х09
+    // Первое поле (4 байта) - поле размера данных, то есть всех полей пакета,
+    // кроме поля размера данных (4 + 1 = 5 байт): 0x0, 0x0, 0x0, 0х05
     m_send_data [0] = 0;
     m_send_data [1] = 0;
     m_send_data [2] = 0;
-    m_send_data [3] = 0x09;
+    m_send_data [3] = 0x05;
 
     // 3. Формируем второе поле пакета подтверждения - время, которое должно повторять
     // время в информационном кадре от АПАК, сохранённое нами в переменной "m_packetTimeFrom_APAK":
@@ -904,7 +922,7 @@ void apak::SvKsonImitator::sendConfirmationPackage(void)
     m_send_data [8] = m_status;
 
 
-    qDebug() <<"Имитатор КСОН: Пакет подтверждения (в окончательном виде) от КСОН к АПАК:";
+    qDebug() <<"Имитатор КСОН: Пакет подтверждения от КСОН к АПАК:";
     qDebug() <<"Имитатор КСОН: Размер: " << m_send_data.length();
     qDebug() <<"Имитатор КСОН: Содержание: " << m_send_data.toHex();
 
