@@ -658,7 +658,7 @@ void apak::SvKsonImitator::analysisMessageFrom_APAK(QByteArray& messageFrom_APAK
 }
 
 
-void apak::SvKsonImitator::informFrameFrom_APAK (QByteArray messageFrom_APAK)
+void apak::SvKsonImitator::informFrameFrom_APAK (QByteArray packageFrom_APAK)
 // Функция обработки пришедшего от АПАК информационного кадра:
 // Аргумент функции: "packageFrom_APAK" - содержит информационный кадр от АПАК.
 
@@ -673,7 +673,7 @@ void apak::SvKsonImitator::informFrameFrom_APAK (QByteArray messageFrom_APAK)
     m_status = 0;
 
     // Перепишем поле "времени" в массив "timeField":
-    QByteArray timeField = messageFrom_APAK.mid (DATA_SIZE_FIELD_LENGTH, TIME_FIELD_LENGTH);
+    QByteArray timeField = packageFrom_APAK.mid (DATA_SIZE_FIELD_LENGTH, TIME_FIELD_LENGTH);
 
     // Переведём поле "времени" в численный вид и запишем его в переменную "m_packetTimeFrom_APAK",
     // чтобы использовать его в пакете подтверждения на этот кадр:
@@ -686,7 +686,7 @@ void apak::SvKsonImitator::informFrameFrom_APAK (QByteArray messageFrom_APAK)
     }
 
     // Скопируем из информационного кадра поле "доступности групп" в массив "groupAvailability_from_APAK"
-    QByteArray groupAvailability_from_APAK = messageFrom_APAK.mid (DATA_SIZE_FIELD_LENGTH + TIME_FIELD_LENGTH,
+    QByteArray groupAvailability_from_APAK = packageFrom_APAK.mid (DATA_SIZE_FIELD_LENGTH + TIME_FIELD_LENGTH,
                                                                    GROUP_AVAILABILITY_FIELD_LENGTH);
 
     // Переведём массив байт "groupAvailability_from_APAK" в битовый массив "m_relevance_by_group_from_APAK"
@@ -702,7 +702,7 @@ void apak::SvKsonImitator::informFrameFrom_APAK (QByteArray messageFrom_APAK)
     // Скопируем "блок параметрической информации" из информационного кадра в массив "informBlock":
     QByteArray informBlock (m_params.receive_data_len, 0);
 
-    informBlock = messageFrom_APAK.mid (DATA_SIZE_FIELD_LENGTH + TIME_FIELD_LENGTH +
+    informBlock = packageFrom_APAK.mid (DATA_SIZE_FIELD_LENGTH + TIME_FIELD_LENGTH +
                                         GROUP_AVAILABILITY_FIELD_LENGTH, m_params.receive_data_len);
 
     // Переведём битовую параметрическую информацию из байтового массива "informBlock" в
