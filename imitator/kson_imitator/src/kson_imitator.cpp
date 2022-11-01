@@ -372,7 +372,7 @@ void apak::SvKsonImitator::sendInformFrame(void)
             // этой группы неактуальными:
             m_relevanceConcrete_by_group_to_APAK [signal_params.group] = false;
 
-            // 5.3.3.1.2. Выясним тип сигнала ("boolean", "unsigned", "false") и запишем в
+            // 5.3.3.1.2. Выясним тип сигнала ("boolean", "unsigned", "float") и запишем в
             // поток НУЛЕВОЕ значение этого типа.
 
             switch (signal_params.data_type)
@@ -401,7 +401,7 @@ void apak::SvKsonImitator::sendInformFrame(void)
 
         } // if(!signal->value().isValid() ...
 
-        // 5.3.4. Выясним тип сигнала ("boolean", "unsigned", "false") и попытаемся
+        // 5.3.4. Выясним тип сигнала ("boolean", "unsigned", "float") и попытаемся
         // преобразовать содержимое переменной "signalValue" к этому типу:
         bool ok;
         switch (signal_params.data_type)
@@ -566,7 +566,7 @@ void apak::SvKsonImitator::messageFrom_APAK(modus::BUFF* buffer)
 
 
     // Разбираемся с принятым от системы АПАК сообщением:
-    qDebug() << "Имитатор КСОН: messageFrom_APAK - длина принятого от АПАК сообщения: " << messageFrom_APAK.length();
+    //qDebug() << "Имитатор КСОН: messageFrom_APAK - длина принятого от АПАК сообщения: " << messageFrom_APAK.length();
 
     if (messageFrom_APAK.length() < DATA_SIZE_FIELD_LENGTH)
     {
@@ -881,7 +881,7 @@ void apak::SvKsonImitator::noConfirmationPackage(void)
 
 void apak::SvKsonImitator::noReceivePackage(void)
 // Эта функция вызывается в том случае, если в течении предельно допустимого времени от
-// сети КСОН не пришёл инфомационный кадр.
+// АПАК не пришёл инфомационный кадр.
 {
     // 1. Отрабатываем ошибку протокола:
     protocolErrorHandling (QString("Имитатор КСОН: Информационный кадр от АПАК за время: %1 не получен").arg(m_params.receive_interval));
@@ -920,7 +920,7 @@ void apak::SvKsonImitator::sendConfirmationPackage(void)
         sizeField = sizeField >> 8;
     }
 
-    // Добавляем поле "размера данных"  к формируемому информационному кадру:
+    // Добавляем поле "размера данных" к формируемому пакету подтверждения:
     m_send_data.append(dataSizeField);
 
     // 3. В массиве "timeField" формируем второе поле пакета подтверждения - поле "времени",
@@ -935,7 +935,7 @@ void apak::SvKsonImitator::sendConfirmationPackage(void)
         m_packetTimeFrom_APAK = m_packetTimeFrom_APAK >> 8;
     }
 
-    // Добавляем поле "времени"  к формируемому информационному кадру:
+    // Добавляем поле "времени"  к формируемому пакету подтверждения:
     m_send_data.append(timeField);
 
 
@@ -983,7 +983,7 @@ void apak::SvKsonImitator::protocolErrorHandling (QString str)
         emit message(QString("Имитатор КСОН: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом"), sv::log::llError, sv::log::mtError);
 
         // Испускаем для интерфейсной части сигнал "say" с командой "breakConnection",
-        // который приказывает интерфейсной части разорвать соединение АПАК:
+        // который приказывает интерфейсной части разорвать соединение c АПАК:
         emit p_io_buffer->say("breakConnection");
 
         // Сбрасываем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
