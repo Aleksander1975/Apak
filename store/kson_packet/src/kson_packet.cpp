@@ -1,5 +1,24 @@
 ﻿#include "kson_packet.h"
 
+
+// Флаг ошибки структуры информационного кадра:
+#define INFO_FRAME_ERROR            1
+
+// Флаг ошибки структуры блока параметрической информации:
+#define PARAMETRIC_INFOBLOCK_ERROR  2
+
+// Длина (в байтах) поля "размера данных" в информационном кадре и в пакете подтверждения:
+#define DATA_SIZE_FIELD_LENGTH              4
+
+// Длина (в байтах) поля "времени" в информационном кадре и в пакете подтверждения:
+#define TIME_FIELD_LENGTH                   4
+
+// Длина (в байтах) поля "доступности групп" в информационном кадре:
+#define GROUP_AVAILABILITY_FIELD_LENGTH     2
+
+// Длина (в байтах) поля "статуса" в пакете подтверждения:
+#define STATUS_FIELD_LENGTH                 1
+
 // Флаг ошибки структуры информационного кадра:
 #define INFO_FRAME_ERROR            1
 
@@ -28,7 +47,7 @@ apak::SvKsonPacket::SvKsonPacket():
     // (номер - это индекс в этом массиве),
     // определяет актуальны ли её сигналы (false - не актуальны, true - актуальны):
     m_relevance_by_group_to_KSON.clear();
-    m_relevance_by_group_to_KSON.resize(16);
+    m_relevance_by_group_to_KSON.resize(GROUP_AVAILABILITY_FIELD_LENGTH * 8);
 
     // Установим актуальность всех сигналов от АПАК к КСОН (группы от 0 до 9):
     for (int numberGr = 0; numberGr <= 9; numberGr++ )
@@ -40,7 +59,7 @@ apak::SvKsonPacket::SvKsonPacket():
     // "relevanceGroup_Byte_to_KSON".
     // Для начала заполняем массив байт "relevanceGroup_Byte_to_KSON" нулями:
     m_relevanceGroup_Byte_to_KSON.clear();
-    m_relevanceGroup_Byte_to_KSON.resize (2);
+    m_relevanceGroup_Byte_to_KSON.resize (GROUP_AVAILABILITY_FIELD_LENGTH);
 
     // В переменной цикла "bitNumberIn_relevance_by_group_to_KSON" будем хранить текущий номер бита в
     // массиве "relevanceGroup_Byte_to_KSON".
@@ -70,7 +89,7 @@ apak::SvKsonPacket::SvKsonPacket():
     //     В этом массиве АКТУАЛЬНОСТЬ сигналов группы определяется, исходя из наличия сигналов с
     //     параметром, указывающим на принадлежность к данной группе, в файле сигналов устройства КСОН.
     m_relevance_by_group_from_KSON.clear();
-    m_relevance_by_group_from_KSON.resize(16);
+    m_relevance_by_group_from_KSON.resize(GROUP_AVAILABILITY_FIELD_LENGTH * 2);
 }
 
 
@@ -128,9 +147,7 @@ bool apak::SvKsonPacket::bindSignal(modus::SvSignal* signal, modus::SignalBindin
 //    Сигналы описываются в файле: "to_KSON.json".
 
 // Цель этой функции состоит в получении всех параметров для каждого сигнала и заполнении в соответствии
-// с ними структур данных (словари  m_signal_by_bitNumberInInformBlock_to_KSON,
-// m_bitNumberInSignal_by_bitNumberInInformBlock_to_КSON, m_signals_by_byte_from_KSON,
-// m_params_by_signal_from_KSON), необходимых для формирования
+// с ними структур данных (перечисленных в файле "kson_packet.h"), необходимых для формирования
 // информационного кадра от системы АПАК к сети КСОН и проверки допустимости значений сигналов
 // информационного кадра от сети КСОН в систему АПАК.
 {
@@ -149,7 +166,7 @@ bool apak::SvKsonPacket::bindSignal(modus::SvSignal* signal, modus::SignalBindin
           // 4. сигналы параметрических данных, поступающие от КСОН
           // - имеют привязку "master".
           // Параметры сигналов "данные, поступающие от КСОН" и "состояние сопряжения сети КСОН с системой АПАК"
-          // библиотекой "libapak_kson_imitator" не используются.
+          // библиотекой "libapak_kson_packet" не используются.
 
             if(signal->config()->type.toLower() == TYPE_DATA)
             { // Если тип сигнала - "DATA", то это "сигнал данных, поступающих от КСОН". Значение
@@ -345,7 +362,7 @@ void apak::SvKsonPacket::start(void)
 // таймера посылки "m_sendTimer".
 // 6. Запускаем на единственное срабатывание таймер посылки "m_sendTimer" с периодом,
 // равным интервалу посылки информационных кадров,
-// от АПАК к КСОН, заданному  в конфигурационном файле "config_apak_imitator.json", как параметр
+// от АПАК к КСОН, заданному  в конфигурационном файле "config_apak.json", как параметр
 // протокола устройства КСОН. Далее будем запускать
 // этот таймер каждый раз после получения пакета подтверждения от сети КСОН.
 // 7. Привязку вызова функции "packageFrom_KSON", к сигналу "modus::IOBuffer::dataReaded". Этот сигнал
@@ -364,7 +381,7 @@ void apak::SvKsonPacket::start(void)
 
     // 3. Запускаем таймер приёма "m_receiveTimer" с периодом, равным предельно допустимому времени
     // между получением информационных кадров от КСОН,
-    // заданному  в конфигурационном файле "config_apak_imitator.json", как параметр протокола устройства КСОН:
+    // заданному  в конфигурационном файле "config_apak.json", как параметр протокола устройства КСОН:
     m_receiveTimer->start(m_params.receive_interval);
 
     // 4. Привязываем вызов функции "noConfirmationPackage" к наступлению таймаута
@@ -383,14 +400,14 @@ void apak::SvKsonPacket::start(void)
 
     // 6. Запускаем на единственное срабатывание таймер посылки "m_sendTimer" с периодом,
     // равным интервалу посылки информационных кадров,
-    // от АПАК к КСОН, заданному  в конфигурационном файле "config_apak_imitator.json", как параметр
+    // от АПАК к КСОН, заданному  в конфигурационном файле "config_apak.json", как параметр
     // протокола устройства КСОН:
     m_sendTimer->start(m_params.send_interval);
 
     // 7. Привязываем вызов функции "packageFrom_KSON", к сигналу "modus::IOBuffer::dataReaded". Этот сигнал
     // испускается интерфейсной частью по приходу данных от интерефейса (в нашем случае - от сети КСОН).
     // В этой функции мы обрабатываем принятый от сети КСОН информационный кадр или пакет подтверждения.
-    connect(p_io_buffer, &modus::IOBuffer::dataReaded, this, &SvKsonPacket::packageFrom_KSON);
+    connect(p_io_buffer, &modus::IOBuffer::dataReaded, this, &SvKsonPacket::messageFrom_KSON);
 
     // 8. Сброс счётчика ошибок взаимодействия КСОН и АПАК:
     m_interactionErrorCounter = 0;
@@ -408,18 +425,18 @@ void apak::SvKsonPacket::sendInformFrame(void)
 // предельно допустимое время от посылки нами информационного кадра к сети КСОН,
 // до получения нами пакета подтверждения от сети КСОН.
 
-// На данный момент - формат информационного кадра не ясен, поэтому будем реализовывать следующий
-// формат:
-// Размер данных - 4 байта
-// Время - 4 байта
-// Доступность групп (группы сигналов от системы АПАК к КСОН имеют номера с 0 по 9) - 2 байта
-// Данные кадра (блок параметрической информации) - 15 бит (2 байта).
+// Поле данных пакета - DATA_SIZE_FIELD_LENGTH байта
+// Поле времени - TIME_FIELD_LENGTH байта
+// Поле доступности групп (группы сигналов от системы АПАК к КСОН имеют номера с 0 по 9) -
+//                                       GROUP_AVAILABILITY_FIELD_LENGTH байта
+// Поле данных кадра (блок параметрической информации) - "params.send_data_len" байтов.
 // Блок параметрической информации от системы АПАК представляем собой набор бит, которые
 // говорят о состоянии ПУ1 и ПУ2 системы АПАК, о состоянии
 // сопряжения АПАК с другими устройствами (СКМ, ИВ-1, КРАБ...).
 // Значение бита "1" означает: "Работает / Подключено / Данные поступают", значение "0" -
 // противоположное состояние.
-// Порядок байт во всех полях кадра - от старшего к младшему (bigEndian).
+
+// Порядок байт во всех числовых полях кадра - от старшего к младшему (bigEndian).
 {
     // qDebug() << "АПАК: Информационный пакет APAK к КСОН: Вызов send()";
 
@@ -500,43 +517,56 @@ void apak::SvKsonPacket::sendInformFrame(void)
 
      // 1.4. В переменной "m_send_data" формируем информационный кадр для передачи от АПАК к КСОН
      // в соответствии с протоколом обмена.
+     m_send_data.clear();
 
-     // 1.4.1. Вначале, выделим память на первые 3 поля:
-     m_send_data.fill( 0, 4 + 4  + 2);
+     // 3. В массиве "dataSizeField" формируем первое поле информационного кадра - "размер данных",
+     // то есть размер всех полей информационного кадра, кроме поля размера данных.
+     // Сначала запишем значение этого поля в переменную "sizeField":
+     uint64_t sizeField = TIME_FIELD_LENGTH + GROUP_AVAILABILITY_FIELD_LENGTH + m_params.send_data_len;
 
-     // 1.4.2. Формируем первое поле информационного кадра:
-     // Первое поле (4 байта) - размер данных (4 + 2 + m_params.send_data_len = 8 байт): 0x0, 0x0, 0x0, 0х08
-     m_send_data [0] = 0;
-     m_send_data [1] = 0;
-     m_send_data [2] = 0;
-     m_send_data [3] = 4 + 2 + m_params.send_data_len;
+     // Переведём переменную "sizeField" в массив "dataSizeField":
+     QByteArray dataSizeField (DATA_SIZE_FIELD_LENGTH, 0);
+     for (int i = DATA_SIZE_FIELD_LENGTH - 1; i >= 0 ; i--)
+     {
+         dataSizeField [i] = sizeField & 0xFF;
+         sizeField = sizeField >> 8;
+     }
 
-     // 1.4.3. Формируем второе поле информационного кадра:
-     // Второе поле (4 байта) - время по данным внешней системы -
-     // целое количество секунд с 1 янв. 1970 г.
-     quint32  timeSince_1970 = QDateTime::currentMSecsSinceEpoch() / 1000;
+     // Добавляем поле "размера данных"  к формируемому информационному кадру:
+     m_send_data.append(dataSizeField);
 
-     m_send_data [4] = (uint8_t) ((timeSince_1970 >> 24) & 0xFF);
-     m_send_data [5] = (uint8_t) ((timeSince_1970 >> 16) & 0xFF);
-     m_send_data [6] = (uint8_t) ((timeSince_1970 >>  8) & 0xFF);
-     m_send_data [7] = (uint8_t) (timeSince_1970 & 0xFF);
 
-     // 1.4.4. Занесём время формирования информационного кадра в переменную "m_packetTimeTo_KSON",
+     // 1.5. В массиве "timeField" формируем второе поле информационного кадра - поле "времени",
+     // которое должно содержать время по данным внешней системы - целое количество секунд
+     // с 1 янв. 1970 г.
+     // Время формирования информационного кадра записываем в переменную "m_packetTimeTo_KSON",
      // чтобы при получении пакета подтверждения проверить, что время в пакете подтверждения совпадает
      // c этим временем:
+     quint64 timeSince_1970 = QDateTime::currentMSecsSinceEpoch() / 1000;
      m_packetTimeTo_KSON = timeSince_1970;
 
-     // 1.4.5. Копируем поле доступности групп "relevanceGroup_Byte_to_KSON" длиной 2 байта в массив "m_send_data":
-     m_send_data [8] = m_relevanceGroup_Byte_to_KSON [0];
-     m_send_data [9] = m_relevanceGroup_Byte_to_KSON [1];
+     // Переведём переменную "timeSince_1970" в массив "timeField":
+     QByteArray timeField (TIME_FIELD_LENGTH, 0);
+     for (int i = TIME_FIELD_LENGTH - 1; i >= 0 ; i--)
+     {
+         timeField [i] = timeSince_1970 & 0xFF;
+         timeSince_1970 = timeSince_1970 >> 8;
+     }
 
-     // 1.4.6. Добавим к трём полям информационного кадра, уже содержащимся в массиве "m_send_data",
-     // четвёртое - блок параметрической информации, сформированный нами в массиве "informBlock":
+     // Добавляем поле "времени"  к формируемому информационному кадру:
+     m_send_data.append(timeField);
+
+     // 1.6. Добавляем поле доступности групп "relevanceGroup_Byte_to_KSON"
+     // в формируемый информационный кадр:
+     m_send_data.append(m_relevanceGroup_Byte_to_KSON);
+
+     // 1.7. Добавим в формируемый информационный кадр блок параметрической информации,
+     // сформированный нами в массиве "informBlock":
      m_send_data.append (informBlock);
 
-     qDebug() <<"АПАК: Информационный кадр от АПАК к КСОН:";
-     qDebug() <<"АПАК: Размер: " << m_send_data.length();
-     qDebug() <<"АПАК: Содержание: " << m_send_data.toHex();
+     //qDebug() <<"АПАК: Информационный кадр от АПАК к КСОН:";
+     //qDebug() <<"АПАК: Размер: " << m_send_data.length();
+     //qDebug() <<"АПАК: Содержание: " << m_send_data.toHex();
 
      // 2. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
      p_io_buffer->output->mutex.lock();
@@ -557,373 +587,356 @@ void apak::SvKsonPacket::sendInformFrame(void)
 }
 
 
-void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
-// В этой функции мы обрабатываем принятый от сети КСОН кадр. Этот кадр может быть двух типов -
-// информационный кадр или пакет подтверждения. По длине принятого кадра, мы
-// определяем его тип (СЕЙЧАС определяем тип кадра по его ДЛИНЕ).
-// Если принят информационный кадр -> мы копируем его в значение сигнала,
-// на который указывает "m_data_signal" (сигнал данных от сети КСОН).
-// Если принят пакет подтверждения, то останавливаем "таймер подтверждения m_confirmTimer",
-// отсчитывающий время от посылки нами информиционного кадра КСОНу, до получения нами
-// от сети КСОН пакета подтверждения. Также при этом мы запускаем "таймер посылки m_sendTimer".
+void apak::SvKsonPacket::messageFrom_KSON(modus::BUFF* buffer)
+// Мы последовательно обрабатываем пакеты, из которых состоит принятое сообщение.
+// Тип пакета (информационный кадр или пакет подтверждения) мы определем по полю
+// размера данных.
 {
-    // qDebug() << "АПАК: packageFrom_KSON";
+    //qDebug() << "AПАК: messageFrom_KSON";
 
     if(p_is_active == false)
         return;
 
     if(!buffer->isReady())
     { // Если принятых данных нет, то не в чем и разбираться (выходим из функции):
-          return;
+        return;
     }
 
-    buffer->mutex.lock();
+    // Блокируем  мьютекс, чтобы интерфейсная часть не имела доступа к входному буферу
+    // пока мы не разберёмся с тем, что находится там сейчас.
+    // Разблокировка мьютикса "buffer -> mutex" будет происходить автоматически ПРИ ВЫХОДЕ
+    // из этой функции. Таким образом мы не допустим ситуации повторного вызова
+    // этой функции до тех пор, пока она не закончит выполняться первый раз.
+    QMutexLocker(&(buffer->mutex));
 
-    // Скопируем пришедший от КСОН пакет в массив "packageFrom_KSON":
-    QByteArray packageFrom_KSON = QByteArray(buffer->data, buffer->offset);
+    // Скопируем пришедшее от КСОН сообщение, которое может состоять:
+    // - из информационного кадра
+    // - из пакета подтверждения
+    // - из информационного кадра и пакета подтверждения в любом порядке
+    // в массив "messageFrom_KSON":
+    QByteArray messageFrom_KSON = QByteArray(buffer->data, buffer->offset);
 
     buffer->reset();
-    buffer->mutex.unlock();
 
-    // Разбираемся с принятым от сети КСОН пакетом:
 
-    // Определим тип принятого кадра:
-    unsigned length = packageFrom_KSON.length();
+    // Разбираемся с принятым от сети КСОН сообщением:
+    // qDebug() << "АПАК: messageFrom_KSON - длина принятого от КСОН сообщения: " << messageFrom_KSON.length();
 
-    // qDebug() << "АПАК: packageFrom_KSON - длина принятого от КСОН пакета: " << length;
+    if (messageFrom_KSON.length() < DATA_SIZE_FIELD_LENGTH)
+    {
+        // Обрабатываем ошибку:
+        protocolErrorHandling (QString("АПАК: Длина принятого от КСОН сообщения равна %1").arg(messageFrom_KSON.length()));
 
-    if ( length == (unsigned)(4 + 4 + 2 + m_params.receive_data_len))
-    {// Принят информационный кадр:
+        return;
+    }
 
-        // Останавливаем таймер приёма:
-        m_receiveTimer->stop();
+    // Выделяем из сообщения от КСОН пакет и разбираемся с ним:
+    analysisMessageFrom_KSON(messageFrom_KSON);
 
-        // Очистим переменную "m_status", в которой мы формируем поле статуса пакета подтверждения от АПАК к КСОН:
-        m_status = 0;
+    if (messageFrom_KSON.length() == 0)
+    { // Всё сообщение, которое было принято от КСОН - мы разобрали:
 
-        if(m_data_signal)
-        { // Если в файле конфигурации сигналов КСОН имеется "сигнал данных", то присваиваем ему
-          // значение, пришедшего от сети КСОН информационного кадра:
+        return;
+    }
 
-            m_data_signal->setValue(QVariant(packageFrom_KSON));
-            emit message(QString("signal %1 updated").arg(m_data_signal->config()->name), sv::log::llDebug, sv::log::mtParse);
-        }
+    if (messageFrom_KSON.length() < DATA_SIZE_FIELD_LENGTH)
+    {
+        // Обрабатываем ошибку:
+        protocolErrorHandling (QString("АПАК: Длина остатка принятого от КСОН сообщения равна %1").arg(messageFrom_KSON.length()));
 
-        // Переменная "packageFrom_KSON", содержит информационный кадр от КСОН.
-        // Правильность информационного кадра в данной версии протокола можно проверить
-        // по правильности содержимого поля "Размер данных", соответствию значений в
-        // поле времени информационного пакета и в поле времени блока параметрических данных (в
-        // случае, если поле времени в блоке параметрических данных - актуально),
-        // и по допустимости значений параметрических данных (в случае их актуальности).
+        return;
+    }
 
-        // Получим значения полей пакета с помощью переменной  "packageFrom_KSON_Stream":
-        QDataStream packageFrom_KSON_Stream (&packageFrom_KSON, QIODevice::ReadOnly);
+    // Выделяем из остатка сообщения от КСОН пакет и разбираемся с ним:
+    analysisMessageFrom_KSON(messageFrom_KSON);
+    return;
+}
 
-        // Согласно протоколу числа типа "float" занимают 4 байта:
-        packageFrom_KSON_Stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
 
-        // Первое поле (4 байта) - поле размера данных. Оно должно быть 4+2+m_params.receive_data_len (33) = 38 байт
-        quint32 dataSize;
-        packageFrom_KSON_Stream >> dataSize;
+void apak::SvKsonPacket::analysisMessageFrom_KSON(QByteArray& messageFrom_KSON)
+// Эта функция осуществляет выделение из принятого от КСОН сообщения одного пакета и,
+// в зависимости от вида пакета (информационный кадр или пакет подтверждения), вызов для
+// его разбора сооответствующей функции.
+{
+    // Перепишем поле "размера данных" в массив "dataSizeField":
+    QByteArray dataSizeField = messageFrom_KSON.mid (0, DATA_SIZE_FIELD_LENGTH);
 
-        if (dataSize != (unsigned)(4 + 2 + m_params.receive_data_len))
-        { // Если поле размера даннных содержит неверную информацию, то устанавливаем флаг ошибки структуры
-          // информационного кадра в переменной "status":
+    // Переведём поле "размера данных" в численный вид и запишем его в переменную "sizeField":
+    uint64_t sizeField = 0;
 
-            m_status |= INFO_FRAME_ERROR;
+    for (int i = 0; i < DATA_SIZE_FIELD_LENGTH; i++)
+    {
+        sizeField = sizeField << 8;
+        sizeField |= (uchar)dataSizeField [i];
+    }
 
-            qDebug () << QString("АПАК: Поле размера данных в информационном кадре от КСОН содержит неверную информацию: %1").arg(dataSize);
-            emit message(QString("АПАК: Поле размера данных в информационном кадре от КСОН содержит неверную информацию: %1").arg(dataSize), sv::log::llError, sv::log::mtError);
-        }
+    // Разбираемся с полем "размера данных":
+    if (sizeField == (unsigned)(TIME_FIELD_LENGTH + GROUP_AVAILABILITY_FIELD_LENGTH + m_params.receive_data_len))
+    { // Поле "размера данных" соответствует информационному кадру:
 
-        // Второе поле (4 байта) - время по данным внешней системы -
-        // целое количество секунд с 1 янв. 1970 г.
-        quint32  timeSince_1970;
-        packageFrom_KSON_Stream >> timeSince_1970;
+        // Копируем этот информационный кадр в массив  "packageFrom_KSON":
+        QByteArray packageFrom_KSON = messageFrom_KSON.mid (0, DATA_SIZE_FIELD_LENGTH +
+                         TIME_FIELD_LENGTH + GROUP_AVAILABILITY_FIELD_LENGTH + m_params.receive_data_len);
 
-        // Сохраним это время в переменной "m_packetTimeFrom_KSON", чтобы использовать его
-        // в пакете подтверждения на этот кадр:
-        m_packetTimeFrom_KSON = timeSince_1970;
+        // Удалим из массива "messageFrom_KSON" принятый информационный кадр:
+        messageFrom_KSON.remove (0, DATA_SIZE_FIELD_LENGTH +
+                                 TIME_FIELD_LENGTH + GROUP_AVAILABILITY_FIELD_LENGTH + m_params.receive_data_len);
 
-        // Третье поле (2 байта) - доступность групп.
-        quint16 groupAvailability;
-        packageFrom_KSON_Stream >> groupAvailability;
+        // Вызовем функцию обработки пришедшего информационного кадра:
+        informFrameFrom_KSON (packageFrom_KSON);
 
-        // Переведём поле "groupAvailability" в битовый массив "m_relevance_by_group_from_KSON"
-        // (пока считаем, что группы нумеруются с нуля):
-        for (quint8 bitNumber = 0; bitNumber <16; bitNumber++)
+        return;
+    }
+
+    if ( sizeField == TIME_FIELD_LENGTH + STATUS_FIELD_LENGTH)
+    { // Поле "размера данных" соответствует пакету подтверждения:
+
+        // Копируем этот пакет подтверждения в массив "packageFrom_KSON":
+        QByteArray packageFrom_KSON = messageFrom_KSON.mid (0, DATA_SIZE_FIELD_LENGTH +
+                         TIME_FIELD_LENGTH + STATUS_FIELD_LENGTH);
+
+        // Удалим из массива "messageFrom_KSON" принятый пакет подтверждения:
+        messageFrom_KSON.remove (0, DATA_SIZE_FIELD_LENGTH +
+                                 TIME_FIELD_LENGTH + STATUS_FIELD_LENGTH);
+
+        // Вызовем функцию обработки пришедшего пакета подтверждения:
+        confirmationPackageFrom_KSON (packageFrom_KSON);
+
+        return;
+    }
+
+    // Поле "размера данных" не соответствует ни информационному кадру, ни пакету подтверждения
+    // - это ошибка, обрабатываем её:
+    protocolErrorHandling (QString("АПАК: Поле размера данных в сообщении от КСОН содержит неверную информацию: %1").arg(sizeField));
+    return;
+}
+
+
+void apak::SvKsonPacket::informFrameFrom_KSON (QByteArray packageFrom_KSON)
+// Функция обработки пришедшего от КСОН информационного кадра:
+// Аргумент функции: "packageFrom_KSON" - содержит информационный кадр от КСОН.
+
+{
+    // Останавливаем таймер приёма:
+    m_receiveTimer->stop();
+
+    if(m_data_signal)
+    { // Если в файле конфигурации сигналов КСОН имеется "сигнал данных", то присваиваем ему
+      // значение, пришедшего от сети КСОН информационного кадра:
+
+        m_data_signal->setValue(QVariant(packageFrom_KSON));
+        emit message(QString("signal %1 updated").arg(m_data_signal->config()->name), sv::log::llDebug, sv::log::mtParse);
+    }
+
+    // Аргумент функции "packageFrom_KSON", содержит информационный кадр от КСОН.
+    // Правильность информационного кадра в данной версии протокола можно проверить
+    // по правильности содержимого поля "Размер данных", соответствию значений в
+    // поле времени информационного пакета и в поле времени блока параметрических данных (в
+    // случае, если поле времени в блоке параметрических данных - актуально),
+    // и по допустимости значений параметрических данных (в случае их актуальности).
+    // Правильнсть информационного кадра нам необходимо знать для формирования
+    // поля статуса пакета подтверждения на этот информационный кадр. Поле статуса
+    // будем формировать в переменной "m_status".
+    // Для начала - очистим эту переменную:
+    m_status = 0;
+
+    // Перепишем поле "времени" в массив "timeField":
+    QByteArray timeField = packageFrom_KSON.mid (DATA_SIZE_FIELD_LENGTH, TIME_FIELD_LENGTH);
+
+    // Переведём поле "времени" в численный вид и запишем его в переменную "m_packetTimeFrom_KSON",
+    // чтобы использовать его в пакете подтверждения на этот кадр:
+    m_packetTimeFrom_KSON = 0;
+    for (int i = 0; i < TIME_FIELD_LENGTH; i++)
+    {
+        m_packetTimeFrom_KSON = m_packetTimeFrom_KSON << 8;
+        m_packetTimeFrom_KSON |= (uchar)timeField [i];
+    }
+
+    // Скопируем из информационного кадра поле "доступности групп" в массив "groupAvailability_from_KSON"
+    QByteArray groupAvailability_from_KSON = packageFrom_KSON.mid (DATA_SIZE_FIELD_LENGTH + TIME_FIELD_LENGTH,
+                                                                   GROUP_AVAILABILITY_FIELD_LENGTH);
+
+    // Переведём массив байт "groupAvailability_from_KSON" в битовый массив "m_relevance_by_group_from_KSON"
+    // (пока считаем, что группы нумеруются с нуля):
+    m_relevance_by_group_from_KSON.clear();
+    m_relevance_by_group_from_KSON.resize(GROUP_AVAILABILITY_FIELD_LENGTH * 8);
+
+    for(quint16  bitNumber = 0; bitNumber < GROUP_AVAILABILITY_FIELD_LENGTH * 8; bitNumber++)
+    {
+           m_relevance_by_group_from_KSON [bitNumber] = (groupAvailability_from_KSON [bitNumber / 8] >> (bitNumber % 8)) & 0x01;
+    }
+
+    // Скопируем "блок параметрической информации" (информационный блок) из информационного кадра в массив "informBlock":
+    QByteArray informBlock = packageFrom_KSON.mid (DATA_SIZE_FIELD_LENGTH + TIME_FIELD_LENGTH +
+                                        GROUP_AVAILABILITY_FIELD_LENGTH, m_params.receive_data_len);
+
+    // Получим значения полей информационного блока с помощью переменной  "informBlock_Stream":
+    QDataStream informBlock_Stream (&informBlock, QIODevice::ReadOnly);
+
+    // Согласно протоколу числа типа "float" занимают 4 байта:
+    informBlock_Stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+
+
+    // Разбираем на отдельные поля информационный блок кадра, принятого нами:
+    for (quint8 signalNumberInInformBlock = 0; signalNumberInInformBlock < m_signals_from_KSON.size();
+             signalNumberInInformBlock++)
+    { // Проходим по всем номерам параметрических данных (сигналов) в информационном блоке:
+
+        // Получаем указатель на сигнал:
+        modus::SvSignal* signal = m_signals_from_KSON [signalNumberInInformBlock];
+
+        // Получаем параметры сигнала:
+        apak::SignalParams signal_params = m_params_by_signal_from_KSON.value (signal);
+
+        // Выясним тип сигнала ("boolean", "unsigned", "false") и считаем из потока
+        // значение cигнала.
+
+        // Переменная для получения значения сигнала булевского типа:
+        bool booleanSignal;
+
+        // Переменная для получения значения сигнала типа "unsigned":
+        quint32 unsignedSignal;
+
+        // Переменная для получения значения сигнала типа "float":
+        float floatSignal;
+
+        // Получаем имя сигнала:
+        QString signalName = signal ->config() ->name;
+
+        // Выясним тип сигнала ("boolean", "unsigned", "float") и считаем из потока значение
+        // этого типа:
+        switch (signal_params.data_type)
         {
-            if (((groupAvailability >> bitNumber) & 0x0001) == 0x0001)
-                m_relevance_by_group_from_KSON [bitNumber] = true;
-            else
-                m_relevance_by_group_from_KSON [bitNumber] = false;
+            case boolType:
+                // Этот сигнал представляет тип "boolean":
+                informBlock_Stream >> booleanSignal;
+                break;
+
+            case unsignedType:
+                // Этот сигнал представляет тип "unsigned" и занимает 4 байта, порядок
+                // которых: big-endian
+                informBlock_Stream >> unsignedSignal;
+                break;
+
+            case floatType:
+            default:
+                // Этот сигнал представляет тип "float" и занимает 4 байта, порядок
+                //которых: big-endian
+                informBlock_Stream >> floatSignal;
+                break;
+        } // switch
+
+        // Определим к какой группе принадлежит сигнал:
+        quint8 group = signal_params.group;
+
+        if (m_relevance_by_group_from_KSON [group] == false)
+        { // Если сигналы группы не актуальны -> незачем проверять допустимость их значений:
+
+            //emit message(QString("АПАК: В информационном кадре от КСОН сигнал: %1 не актуален").arg(signalName), sv::log::llInfo, sv::log::mtInfo);
+            //qDebug() << QString("АПАК: В информационном кадре от КСОН сигнал: %1 не актуален").arg(signalName);
+
+            continue;
         }
 
-        // Дальнейшие поля - это поля параметрических данных.
-        // Разбираем на отдельные поля информационный блок кадра, принятого нами:
-        for (quint8 signalNumberInInformBlock = 0; signalNumberInInformBlock < m_signals_from_KSON.size();
-                 signalNumberInInformBlock++)
-        { // Проходим по всем номерам параметров (сигналов) в информационном блоке:
+        // Если значение сигнала актуально -> проверяем допустимость его значения.
 
-            // Получаем указатель на сигнал:
-            modus::SvSignal* signal = m_signals_from_KSON [signalNumberInInformBlock];
+        // Сначала из параметров сигнала получим его минимальное и максимальное значения:
+        float min = signal_params.min;
+        float max = signal_params.max;
 
-            // Получаем параметры сигнала:
-            apak::SignalParams signal_params = m_params_by_signal_from_KSON.value (signal);
-
-            // Выясним тип сигнала ("boolean", "unsigned", "false") и считаем из потока
-            // значение cигнала.
-
-            // Переменная для получения значения сигнала булевского типа:
-            bool booleanSignal;
-
-            // Переменная для получения значения сигнала типа "unsigned":
-            quint32 unsignedSignal;
-
-            // Переменная для получения значения сигнала типа "float":
-            float floatSignal;
-
-            // Получаем тип сигнала:
-            QString type = signal_params.data_type;
-
-            // Считываем из потока значение сигнала:
-            if ( type.compare ("boolean", Qt::CaseInsensitive) == 0)
-            { // Этот сигнал представляет тип "boolean" -> сигнал занимает 1 бит.
-
-                packageFrom_KSON_Stream >> booleanSignal;
-            }
-
-            if ( type.compare ("float", Qt::CaseInsensitive) == 0)
-            { // Этот сигнал представляет тип "float" и занимает 4 байта, порядок которых: big-endian
-
-                packageFrom_KSON_Stream >> floatSignal;
-            }
-
-            if ( type.compare ("unsigned", Qt::CaseInsensitive) == 0)
-            { // Этот сигнал представляет тип "unsigned" и занимает 4 байта, порядок которых: big-endian.
-
-                packageFrom_KSON_Stream >> unsignedSignal;
-            }
-
-            // 3.3. Определим к какой группе принадлежит сигнал:
-            quint8 group = signal_params.group;
-
-            if (m_relevance_by_group_from_KSON [group] == false)
-            { // Если сигналы группы не актуальны -> незачем проверять допустимость их значений:
-
-                continue;
-            }
-
-            // Если значение сигнала актуально -> проверяем допустимость его значения:
-
-            // Сначала из параметров сигнала получим его минимальное и максимальное значения:
-            float min = signal_params.min;
-            float max = signal_params.max;
-
-            if ( type.compare ("boolean", Qt::CaseInsensitive) == 0)
-            { // Тип сигнала "boolean"
-
+        // Проверки будут различаться В зависимости от типа сигнала:
+        switch (signal_params.data_type)
+        {
+            case boolType:
+                // Этот сигнал представляет тип "boolean":
                 if( booleanSignal != 0 && booleanSignal != 1)
                 { // Если значение булевского сигнала отлично от "0" и от "1" ->
                     //фиксируем ошибку блока параметрической информации:
 
                     m_status |= PARAMETRIC_INFOBLOCK_ERROR;
 
-                    qDebug() << QString("АПАК: Ошибка диапазона параметрического данного: значение %1, тип %2, минимум %3, максимум %4").arg (booleanSignal).arg(type).arg(min).arg(max);
-                    emit message(QString("АПАК: Ошибка диапазона параметрического данного: значение %1, тип %2, минимум %3, максимум %4").arg (booleanSignal).arg(type).arg(min).arg(max), sv::log::llError, sv::log::mtError);
+                    protocolErrorHandling (QString("АПАК: В информационном кадре от КСОН сигнал: %1, типа boolean, cо значением %2 выходит за диапазон").arg(signalName).arg (booleanSignal));
+
+                    continue;
                 }
-            }
 
-            if ( type.compare ("float", Qt::CaseInsensitive) == 0)
-            { // Этот сигнал представляет тип "float"
+                // Отображаем оператору значение сигнала:
+                emit message(QString("АПАК: В информационном кадре от КСОН сигнал: %1 типа boolean имеет значение: %2").arg(signalName).arg(booleanSignal), sv::log::llInfo, sv::log::mtInfo);
+                qDebug() << QString("АПАК: В информационном кадре от КСОН сигнал: %1 типа boolean имеет значение: %2").arg(signalName).arg(booleanSignal);
+                break;
 
-                if ( floatSignal < min || floatSignal > max)
-                { // Если значение сигнала типа "float" не укладывается в указанные
-                    // в протоколе пределы -> фиксируем ошибку блока параметрической информации:
-
-                    m_status |= PARAMETRIC_INFOBLOCK_ERROR;
-
-                    qDebug() << QString("АПАК: Ошибка диапазона параметрического данного: значение %1, тип %2, минимум %3, максимум %4").arg (floatSignal).arg(type).arg(min).arg(max);
-                    emit message(QString("АПАК: Ошибка диапазона параметрического данного: значение %1, тип %2, минимум %3, максимум %4").arg (floatSignal).arg(type).arg(min).arg(max), sv::log::llError, sv::log::mtError);
-                }
-            }
-
-            if ( type.compare ("unsigned", Qt::CaseInsensitive) == 0)
-            { // Этот сигнал представляет тип "unsigned"
-
+            case unsignedType:
+                // Этот сигнал представляет тип "unsigned" и занимает 4 байта, порядок
+                // которых: big-endian
                 if (unsignedSignal < min || unsignedSignal > max)
                 {// Если значение сигнала типа "unsigned" не укладывается в указанные
                     // в протоколе пределы -> фиксируем ошибку блока параметрической информации:
 
                     m_status |= PARAMETRIC_INFOBLOCK_ERROR;
 
-                    qDebug() << QString("АПАК: Ошибка диапазона параметрического данного: значение %1, тип %2, минимум %3, максимум %4").arg (unsignedSignal).arg(type).arg(min).arg(max);
-                    emit message(QString("АПАК: Ошибка диапазона параметрического данного: значение %1, тип %2, минимум %3, максимум %4").arg (unsignedSignal).arg(type).arg(min).arg(max), sv::log::llError, sv::log::mtError);
+                    protocolErrorHandling (QString("АПАК: В информационном кадре от КСОН сигнал: %1, типа unsigned, cо значением %2 выходит за диапазон c минимальным значением: %3 и максимальным значением: %4").arg(signalName).arg (unsignedSignal).arg(min).arg(max));
+
+                    continue;
                 }
+
+                // Отображаем оператору значение сигнала:
+                emit message(QString("АПАК: В информационном кадре от КСОН сигнал: %1 типа unsigned имеет значение: %2").arg(signalName).arg(unsignedSignal), sv::log::llInfo, sv::log::mtInfo);
+                qDebug() << QString("АПАК: В информационном кадре от КСОН сигнал: %1 типа unsigned имеет значение: %2").arg(signalName).arg(unsignedSignal);
+                break;
+
+            case floatType:
+            default:
+                // Этот сигнал представляет тип "float" и занимает 4 байта, порядок
+                //которых: big-endian
+                if (floatSignal < min || floatSignal > max)
+                {// Если значение сигнала типа "float" не укладывается в указанные
+                    // в протоколе пределы -> фиксируем ошибку блока параметрической информации:
+
+                    m_status |= PARAMETRIC_INFOBLOCK_ERROR;
+
+                    protocolErrorHandling (QString("АПАК: В информационном кадре от КСОН сигнал: %1, типа float, cо значением %2 выходит за диапазон c минимальным значением: %3 и максимальным значением: %4").arg(signalName).arg (unsignedSignal).arg(min).arg(max));
+
+                    continue;
+                }
+
+                // Отображаем оператору значение сигнала:
+                emit message(QString("АПАК: В информационном кадре от КСОН сигнал: %1 типа float имеет значение: %2").arg(signalName).arg(unsignedSignal), sv::log::llInfo, sv::log::mtInfo);
+                qDebug() << QString("АПАК: В информационном кадре от КСОН сигнал: %1 типа float имеет значение: %2").arg(signalName).arg(unsignedSignal);
+                break;
+        } // switch
+
+
+        if (signal == m_time_signal)
+        { // "Это сигнал времени". Если мы оказались в этой точке программы, то это
+            // значит, что он актуальный и его значение находится в допустимых пределах ->
+            // Проводим проверку на соответствие значения времени в поле времени информационного
+            // кадра (хранящейся в переменной "m_packetTimeFrom_KSON") и в информационном блоке
+            // информационного кадра (значение сигнала: "unsignedSignal") :
+            if (unsignedSignal == m_packetTimeFrom_KSON)
+            { // Если значения совпадают -> устанавливаем значение "сигнала времени":
+
+                 m_time_signal->setValue(m_packetTimeFrom_KSON);
             }
+            else
+            {   // Если значения НЕ совпадают:
+                m_status |= PARAMETRIC_INFOBLOCK_ERROR;
 
-            if (signal == m_time_signal)
-            { // "Это сигнал времени". Если мы оказались в этой точке программы, то это
-                // значит, что он актуальный и его значение находится в допустимых пределах ->
-                // Проводим проверку на соответствие значения времени в поле времени
-                // в информационном пакете (значение сигнала) и значения в поле времени в
-                // блоке параметрической информации (переменная "timeSince_1970"):
-                if (unsignedSignal == timeSince_1970)
-                { // Если значения совпадают -> устанавливаем значение "сигнала времени":
+                // Обрабатываем ошибку:
+                protocolErrorHandling (QString("АПАК: Время в поле времени информационного кадра: %1 не совпадает с временем в поле параметрических данных: %2").arg(m_packetTimeFrom_KSON).arg(unsignedSignal));
+            }
+        } // if (signal == m_time_signal)
 
-                     m_time_signal->setValue(timeSince_1970);
-                }
-                else
-                {
-                    qDebug () << QString("АПАК: Время в поле времени информационного кадра: %1 не совпадает с временем в поле параметрических данных: %2").arg(timeSince_1970).arg(unsignedSignal);
-                    emit message(QString("АПАК: Время в поле времени информационного кадра: %1 не совпадает с временем в поле параметрических данных: %2").arg(timeSince_1970).arg(unsignedSignal), sv::log::llError, sv::log::mtError);
-                }
-            } // if (signal == m_time_signal)
-        } // Проходим по всем номерам параметров (сигналов) в информационном блоке:
+    } // for
 
+    if (m_status == 0)
+     { // Если при разборе информационного кадра от КСОН мы НЕ обнаружили ошибкок -> сбрасываем
+      // счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
 
-        if (m_status != 0)
-        { // Если при разборе информационного кадра от КСОН мы обнаружили ошибку -> увеличиваем
-            // счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
-
-            m_interactionErrorCounter++;
-
-            qDebug() << QString("АПАК: При разборе информационного кадра от КСОН обнаружили ошибку. Количество идущих подряд ошибок взаимодействия : %1").arg(m_interactionErrorCounter);
-            emit message(QString("АПАК: При разборе информационного кадра от КСОН обнаружили ошибку. Количество идущих подряд ошибок взаимодействия : %1").arg(m_interactionErrorCounter), sv::log::llError, sv::log::mtError);
-        }
-        else
-        { // Если при разборе информационного кадра от КСОН мы НЕ обнаружили ошибкок -> сбрасываем
-          // счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
-
-            m_interactionErrorCounter = 0;
-
-            // Выводим сообщение оператору:
-            qDebug() << QString("АПАК: Принят информационный кадр от КСОН без ошибок");
-            emit message(QString("АПАК: Принят информационный кадр от КСОН без ошибок"), sv::log::llInfo, sv::log::mtSuccess);
-        }
-
-        // Сформируем и пошлём пакет подтверждения:
-        sendConfirmationPackage();
-    } // Если принят информационный кадо
-
-    if ( length == 9)
-    { // Принят пакет подтверждения:
-
-        // Останавливаем таймер подтверждения:
-        m_conformTimer->stop();
-
-        // Переменная "packageFrom_KSON", содержит пакет подтверждения от КСОН.
-        // Правильность пакета подтверждения в данной версии протокола можно проверить
-        // по правильности содержимого поля "Размер данных", правильности значения поля времени
-        // (оно должно повторять значение времени в информационном кадре от системы АПАК к
-        // сети КСОН) и допустимости значений в поле статуса.
-
-        // Переменная "confirmationPackageErrorFlag" - это флаг ошибки пакета подтверждения.
-        // Устанавливается, если поле статуса пакета подтверждения
-        // содержит значение, говорящее об ошибке в информационном пакете от АПАК к КСОН
-        // или имеются любые ошибки в самом пакете подтверждения.
-
-        //  Перед началом анализа пакета подтверждения сбросим флаг ошибки:
-        bool confirmationPackageErrorFlag = false;
-
-        // Получим значения полей пакета с помощью переменной  "packageFrom_KSON_Stream":
-        QDataStream packageFrom_KSON_Stream (&packageFrom_KSON, QIODevice::ReadOnly);
-
-        // Первое поле (4 байта) - размер данных. Он должен быть 4 + 1 = 5 байт
-        quint32 dataSize;
-        packageFrom_KSON_Stream >> dataSize;
-
-        if (dataSize != 5)
-        { // Если поле размера данных содержит неверную информацию, то
-          // выставляем флаг ошибки пакета подтвердения:
-
-            qDebug () << QString("АПАК: Поле размера данных в пакете подтверждения от КСОН содержит неверную информацию: %1").arg(dataSize);
-            emit message(QString("АПАК: Поле размера данных в пакете подтверждения от КСОН содержит неверную информацию: %1").arg(dataSize), sv::log::llError, sv::log::mtError);
-
-            confirmationPackageErrorFlag = true;
-        }
-
-        // Второе поле (4 байта) - время, информационного кадра от АПАК к КСОН.
-        quint32  timeSince_1970;
-        packageFrom_KSON_Stream >> timeSince_1970;
-
-        if (timeSince_1970 !=  m_packetTimeTo_KSON)
-        { // Если поля времени в информационном кадре от АПАК к КСОН и в пакете подтверждения
-          // от КСОН к АПАК не совпадают, то выставляем флаг ошибки пакета подтвердения:
-
-            qDebug () << QString("АПАК: Время в пакете подтверждения от КСОН: %1 не совпадает с временем в информационном кадре: %2").arg(timeSince_1970).arg(m_packetTimeTo_KSON);
-            emit message(QString("АПАК: Время в пакете подтверждения от КСОН: %1 не совпадает с временем в информационном кадре: %2").arg(timeSince_1970).arg(m_packetTimeTo_KSON), sv::log::llError, sv::log::mtError);
-
-            confirmationPackageErrorFlag = true;
-        }
-
-        // Третье поле (1 байт) - статус.
-        quint8 statusFromPacket;
-        packageFrom_KSON_Stream >> statusFromPacket;
-        if (statusFromPacket != 0)
-        { // Если значение в поле статуса отлично от 0, то выставляем флаг ошибки пакета подтвердения:
-
-            confirmationPackageErrorFlag = true;
-
-            qDebug () << QString("АПАК: Значение в поле статуса: %1 отлично от нуля").arg(statusFromPacket);
-            emit message(QString("АПАК: Значение в поле статуса: %1 отлично от нуля").arg(statusFromPacket), sv::log::llError, sv::log::mtError);
-        }
-
-        if ( confirmationPackageErrorFlag == true)
-        { // Если при разборе пакета подтверждения мы обнаружили ошибку -> увеличиваем
-            // счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
-
-            m_interactionErrorCounter++;
-
-            qDebug() << QString("АПАК: При разборе пакета подтверждения обнаружили ошибку. Количество идущих подряд ошибок взаимодействия : %1").arg(m_interactionErrorCounter);
-            emit message(QString("АПАК: При разборе пакета подтверждения обнаружили ошибку. Количество идущих подряд ошибок взаимодействия : %1").arg(m_interactionErrorCounter), sv::log::llError, sv::log::mtError);
-        }
-        else
-        { //Если при разборе пакета подтверждения мы НЕ обнаружили ошибок -> сбрасываем
-            // счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
-
-            m_interactionErrorCounter = 0;
-
-            // Выводим сообщение оператору:
-            qDebug() << QString("АПАК: Принят пакет подтверждения от КСОН без ошибок");
-            emit message(QString("АПАК: Принят пакет подтверждения от КСОН без ошибок"), sv::log::llInfo, sv::log::mtSuccess);
-        }
-
-        // Запускаем на единственное срабатывание "таймер посылки m_sendTimer" отсчитывающий
-        // период посылки информационных кадров от системы АПАК к сети КСОНс периодом,
-        // равным интервалу между информационными кадрами,
-        // заданному  в конфигурационном файле "config_apak.json", как параметр протокола устройства КСОН.
-        // По срабатыванию этого таймера будет вызвана функция "send", для посылки информационного кадра к
-        // сети КСОН.
-        m_sendTimer->start(m_params.send_interval);
-    } // Если принят пакет подтверждения
-
-    if ( length != 9 && length != (unsigned)(4 + 4 + 2 + m_params.receive_data_len))
-    { // Если размер принятого кадра != 9 (размер пакета подтверждения) и
-        // размер принятого кадра != 4 + 4 + 2 + m_params.receive_data_len (размер информационного кадра)
-
-        // Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
-        m_interactionErrorCounter++;
-
-        // Выдаём сообщение об ошибке:
-        emit message(QString("АПАК: Длина принятого от КСОН сообщения равна %1. Количество идущих подряд ошибок взаимодействия : %2").arg(length).arg(m_interactionErrorCounter), sv::log::llError, sv::log::mtError);
-        qDebug() << QString("АПАК: Длина принятого от КСОН сообщения равна %1. Количество идущих подряд ошибок взаимодействия : %2").arg(length).arg(m_interactionErrorCounter);
-    } // Если размер принятых данных не совпадает ни с размером информационного кадра
-    // ни с размером пакета подтверждения
-
-    // Если счётчик подряд идущих ошибок взаимодействия АПАК с КСОН больше значения
-    // указанного в протоколе:
-    if (m_interactionErrorCounter >= m_params.numberOfErrors)
-    {
-        qDebug() << QString ("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером");
-        emit message(QString("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером"), sv::log::llError, sv::log::mtError);
-
-        // Испускаем для интерфейсной части сигнал "say" с командой "breakConnection",
-        // который приказывает интерфейсной части разорвать соединение с сервером КСОН:
-        emit p_io_buffer->say("breakConnection");
-
-        // Сбрасываем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
         m_interactionErrorCounter = 0;
+
+        // Выводим сообщение оператору:
+        qDebug() << QString("АПАК: Принят информационный кадр от КСОН без ошибок");
+        emit message(QString("АПАК: Принят информационный кадр от КСОН без ошибок"), sv::log::llInfo, sv::log::mtSuccess);
     }
 
     if(m_state_signal)
@@ -934,38 +947,104 @@ void apak::SvKsonPacket::packageFrom_KSON(modus::BUFF* buffer)
        m_state_signal->setValue(int(1));
     }
     // p_last_parsed_time = QDateTime::currentDateTime();
+
+    // Сформируем и пошлём пакет подтверждения:
+    sendConfirmationPackage();
+}
+
+
+void  apak::SvKsonPacket::confirmationPackageFrom_KSON (QByteArray packageFrom_KSON)
+// Функция обработки пришедшего от КСОН пакета подтверждения:
+// Аргумент функции: "packageFrom_KSON" - содержит пакет подтверждения от КСОН.
+{
+    // Останавливаем таймер подтверждения:
+    m_conformTimer->stop();
+
+    // Аргумент функции: "packageFrom_KSON" - содержит пакет подтверждения от КСОН.
+    // Правильность пакета подтверждения в данной версии протокола можно проверить
+    // по правильности значения поля времени
+    // (оно должно повторять значение времени в информационном кадре от АПАК
+    // к КСОН) и допустимости значений в поле статуса.
+
+    // Переменная "confirmationPackageErrorFlag" - это флаг ошибки пакета подтверждения.
+    // Устанавливается, если поле статуса пакета подтверждения
+    // содержит значение, говорящее об ошибке в информационном кадре от АПАК к
+    // КСОН или имеются любые ошибки в самом пакете подтверждения.
+
+    //  Перед началом анализа пакета подтверждения сбросим флаг ошибки:
+    bool confirmationPackageErrorFlag = false;
+
+    // Перепишем поле "времени" в массив "timeField":
+    QByteArray timeField = packageFrom_KSON.mid (DATA_SIZE_FIELD_LENGTH, TIME_FIELD_LENGTH);
+
+    // Переведём поле "времени" в численный вид - переменную "timeSince_1970":
+    quint64  timeSince_1970 = 0;
+    for (int i = 0; i < TIME_FIELD_LENGTH; i++)
+    {
+        timeSince_1970 = timeSince_1970 << 8;
+        timeSince_1970 |= (uchar)timeField [i];
+    }
+
+    if (timeSince_1970 !=  m_packetTimeTo_KSON)
+    { // Если поля времени в информационном кадре от АПАК к КСОН и в пакете подтверждения
+      // от КСОН к АПАК не совпадают, то выставляем флаг ошибки пакета подтвердения:
+
+        confirmationPackageErrorFlag = true;
+
+        protocolErrorHandling(QString("АПАК: Время в пакете подтверждения от КСОН: %1 не совпадает с временем в информационном кадре: %2").arg(timeSince_1970).arg(m_packetTimeTo_KSON));
+    }
+
+    // Третье поле (1 байт) - статус.
+    char statusFromPacket = packageFrom_KSON[DATA_SIZE_FIELD_LENGTH + TIME_FIELD_LENGTH];
+
+    if (statusFromPacket != 0)
+    { // Если значение в поле статуса отлично от 0, то выставляем флаг ошибки пакета подтвердения:
+
+        confirmationPackageErrorFlag = true;
+
+        protocolErrorHandling(QString("АПАК: Значение в поле статуса: %1 отлично от нуля").arg(statusFromPacket));
+    }
+
+    if ( confirmationPackageErrorFlag == false)
+    { //Если при разборе пакета подтверждения мы НЕ обнаружили ошибок -> сбрасываем
+        // счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
+
+        m_interactionErrorCounter = 0;
+
+        // Выводим сообщение оператору:
+        qDebug() << QString("АПАК: Принят пакет подтверждения от КСОН без ошибок");
+        emit message(QString("АПАК: Принят пакет подтверждения от КСОН без ошибок"), sv::log::llInfo, sv::log::mtSuccess);
+    }
+
+    if(m_state_signal)
+    {// Если в файле конфигурации сигналов КСОН имеется "сигнал состояния", то, по приходу ЛЮБОГО
+     // (правильного или неправильного) информационного кадра или пакета подтверждения от
+      // сети КСОН устанавливаем его значение в 1:
+
+       m_state_signal->setValue(int(1));
+    }
+    // p_last_parsed_time = QDateTime::currentDateTime();
+
+    // Запускаем на единственное срабатывание "таймер посылки m_sendTimer" отсчитывающий
+    // период посылки информационных кадров от АПАК к КСОН с периодом,
+    // равным интервалу между информационными кадрами,
+    // заданному  в конфигурационном файле "config_apak.json", как параметр протокола
+    // имитатора устройства КСОН.
+    // По срабатыванию этого таймера будет вызвана функция "send", для посылки информационного кадра к
+    // КСОН.
+    m_sendTimer->start(m_params.send_interval);
 }
 
 
 void apak::SvKsonPacket::noConfirmationPackage(void)
 // Эта функция вызывается в том случае, если в течении предельно допустимого времени от
-// посылки нами информационного кадра к сети КСОН, до получения нами пакета подтверждения от сети КСОН
+// посылки нами информационного кадра к КСОН, до получения нами пакета подтверждения от КСОН
 // пакет подтверждения так и не пришёл.
 {
-    // 1. Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
-    m_interactionErrorCounter++;
+    // 1. Отрабатываем ошибку протокола:
+    protocolErrorHandling(QString("АПАК: Пакет подтверждения от КСОН за время: %1 не получен").arg(m_params.conform_interval));
 
-    // 2. Выводим в утилиту "logview" и на консоль информацию о том, что пакет
-    // подтверждения не получен:
-    emit message(QString("АПАК: Пакет подтверждения от КСОН за время: %1 не получен. Количество идущих подряд ошибок взаимодействия : %2").arg(m_params.conform_interval).arg(m_interactionErrorCounter), sv::log::llError, sv::log::mtError);
-    qDebug() << QString("АПАК: Пакет подтверждения от КСОН за время: %1 не получен. Количество идущих подряд ошибок взаимодействия : %2").arg(m_params.conform_interval).arg(m_interactionErrorCounter);
-
-    // 3. Если счётчик подряд идущих ошибок взаимодействия АПАК с КСОН больше значения
-    // указанного в протоколе:
-    if (m_interactionErrorCounter >= m_params.numberOfErrors)
-    {
-        qDebug() << QString ("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером");
-        emit message(QString("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером"), sv::log::llError, sv::log::mtError);
-
-        // Испускаем для интерфейсной части сигнал "say" с командой "breakConnection",
-        // который приказывает интерфейсной части разорвать соединение с сервером КСОН:
-        emit p_io_buffer->say("breakConnection");
-
-        // Сбрасываем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
-        m_interactionErrorCounter = 0;
-    }
-
-    // 4. Даже если пакета подтверждения не пришло в течении оговоренного в протоколе времени
+    // 2. Даже если пакета подтверждения не пришло в течении оговоренного в протоколе времени
     // (m_params.conform_interval), то мы всё равно запускаем на единственное срабатывание
     // "таймер посылки m_sendTimer", чтобы продолжать посылать информационные кадры к КСОН:
     m_sendTimer->start(m_params.send_interval);
@@ -976,73 +1055,71 @@ void apak::SvKsonPacket::noReceivePackage(void)
 // Эта функция вызывается в том случае, если в течении предельно допустимого времени от
 // сети КСОН не пришёл инфомационный кадр.
 {
-    // 1. Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
-    m_interactionErrorCounter++;
+    // 1. Отрабатываем ошибку протокола:
+    protocolErrorHandling (QString("АПАК: Информационный кадр от КСОН за время: %1 не получен").arg(m_params.receive_interval));
 
-    // 2. Выводим в утилиту "logview" и на консоль информацию о том, что информационный кадр от КСОН
-    // не получен:
-    emit message(QString("АПАК: Информационный кадр от КСОН за время: %1 не получен. Количество идущих подряд ошибок взаимодействия : %2").arg(m_params.receive_interval).arg(m_interactionErrorCounter), sv::log::llError, sv::log::mtError);
-    qDebug() << QString("АПАК: Информационный кадр от КСОН за время: %1 не получен. Количество идущих подряд ошибок взаимодействия : %2").arg(m_params.receive_interval).arg(m_interactionErrorCounter);
-
-    // 3. Если счётчик подряд идущих ошибок взаимодействия АПАК с КСОН больше значения
-    // указанного в протоколе:
-    if (m_interactionErrorCounter >= m_params.numberOfErrors)
-    {
-        qDebug() << QString ("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером");
-        emit message(QString("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-сервером"), sv::log::llError, sv::log::mtError);
-
-        // Испускаем для интерфейсной части сигнал "say" с командой "breakConnection",
-        // который приказывает интерфейсной части разорвать соединение с сервером КСОН:
-        emit p_io_buffer->say("breakConnection");
-
-        // Сбрасываем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
-        m_interactionErrorCounter = 0;
-    }
-
-    // 4. Даже если инфомационного кадра не пришло в течении оговоренного в протоколе времени
+    // 2. Даже если инфомационного кадра не пришло в течении оговоренного в протоколе времени
     // (m_params.receive_interval), то мы всё равно запускаем на единственное срабатывание
     // "таймер приёма m_receiveTimer", чтобы продолжать отображать в утилите "logview" и
     // на консоли факт отсутствия информационных кадров от КСОН:
     m_receiveTimer->start(m_params.receive_interval);
 }
 
+
 void apak::SvKsonPacket::sendConfirmationPackage(void)
 // Формирование и посылка пакета подтверждения.
 // На данный момент - формат пакета подтверждения не ясен, поэтому будем реализовывать следующий
 // формат:
-// Размер данных - 4 байта
-// Время - 4 байта
-// Статус - 1 байт
+// Поле данных пакета - DATA_SIZE_FIELD_LENGTH байта
+// Поле времени - TIME_FIELD_LENGTH байта
+// Поле статуса - STATUS_FIELD_LENGTH байт
 {
-    // В переменной "m_send_data" формируем пакет подтверждения для передачи от АПАК к КСОН
+    // В массиве "m_send_data" формируем пакет подтверждения для передачи от АПАК к КСОН
     // в соответствии с протоколом обмена.
 
-    // 1. Вначале, выделим память:
-    m_send_data.fill( 0, 9);
+    // 1. Вначале, очистим массив:
+    m_send_data.clear();
 
-    // 2. Формируем первое поле пакета подтверждения:
-    // Первое поле (4 байта) - размер данных, то есть всех полей пакета,
-    // кроме поля размера данных (4 + 1 = 5 байт): 0x0, 0x0, 0x0, 0х05
-    m_send_data [0] = 0;
-    m_send_data [1] = 0;
-    m_send_data [2] = 0;
-    m_send_data [3] = 0x05;
+    // 2. В массиве "dataSizeField" формируем первое поле пакета подтверждения - "размер данных",
+    // то есть размер всех полей пакета подтверждения, кроме поля размера данных.
+    // Сначала запишем значение этого поля в переменную "sizeField":
+    uint64_t sizeField = TIME_FIELD_LENGTH + STATUS_FIELD_LENGTH;
 
-    // 3. Формируем второе поле пакета подтверждения - время, которое должно повторять
-    // время в информационном кадре от КСОН, сохранённое нами в переменной "m_packetTimeFrom_KSON":
-    m_send_data [4] = (uint8_t) ((m_packetTimeFrom_KSON >> 24) & 0xFF);
-    m_send_data [5] = (uint8_t) ((m_packetTimeFrom_KSON >> 16) & 0xFF);
-    m_send_data [6] = (uint8_t) ((m_packetTimeFrom_KSON >>  8) & 0xFF);
-    m_send_data [7] = (uint8_t) (m_packetTimeFrom_KSON & 0xFF);
+    // Переведём переменную "sizeField" в массив "dataSizeField":
+    QByteArray dataSizeField (DATA_SIZE_FIELD_LENGTH, 0);
+    for (int i = DATA_SIZE_FIELD_LENGTH - 1; i >= 0 ; i--)
+    {
+        dataSizeField [i] = sizeField & 0xFF;
+        sizeField = sizeField >> 8;
+    }
 
-    // 4. Записываем третье поле пакета подтверждения - статус. Оно сформировано нами в процессе
+    // Добавляем поле "размера данных" к формируемому пакету подтверждения:
+    m_send_data.append(dataSizeField);
+
+    // 3. В массиве "timeField" формируем второе поле пакета подтверждения - поле "времени",
+    // оно должно повторять время в информационном кадре от КСОН, сохранённое нами в переменной
+    // "m_packetTimeFrom_KSON":
+
+    // Переведём переменную "m_packetTimeFrom_KSON" в массив "timeField":
+    QByteArray timeField (TIME_FIELD_LENGTH, 0);
+    for (int i = TIME_FIELD_LENGTH - 1; i >= 0 ; i--)
+    {
+        timeField [i] = m_packetTimeFrom_KSON & 0xFF;
+        m_packetTimeFrom_KSON = m_packetTimeFrom_KSON >> 8;
+    }
+
+    // Добавляем поле "времени"  к формируемому пакету подтверждения:
+    m_send_data.append(timeField);
+
+
+    // 4. Добавляем к пакету подтверждения - поле статуса. Оно сформировано нами в процессе
     // разбора информационного кадра от КСОН:
-    m_send_data [8] = m_status;
+    m_send_data.append( m_status);
 
 
-    qDebug() <<"АПАК: Пакет подтверждения от АПАК к КСОН:";
-    qDebug() <<"Размер: " << m_send_data.length();
-    qDebug() <<"Содержание: " << m_send_data.toHex();
+    //qDebug() <<"АПАК: Пакет подтверждения от АПАК к КСОН:";
+    //qDebug() <<"АПАК: Размер: " << m_send_data.length();
+    //qDebug() <<"АПАК: Содержание: " << m_send_data.toHex();
 
     // 5. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
     p_io_buffer->output->mutex.lock();
@@ -1057,6 +1134,36 @@ void apak::SvKsonPacket::sendConfirmationPackage(void)
 }
 
 
+void apak::SvKsonPacket::protocolErrorHandling (QString str)
+// Обработка ошибки протокола. В чем она состоит:
+// - Увеличение счётчика подряд идущих ошибок взаимодействия АПАК с КСОН
+// - Выдача оператору в утилите "logview" и на консоль сообщения "str" об ошибке
+// - В случае трёх ошибок взаимодействия подряд, выдать интерфейсной части
+//   команду на разъединение соединения и сбросить счётчик подряд идущих ошибок
+//   взаимодействия КСОН и АПАК.
+{
+    // Увеличиваем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
+    m_interactionErrorCounter++;
+
+    // Выдаём сообщение об ошибке:
+    emit message(str + QString (". Количество идущих подряд ошибок взаимодействия : %1").arg(m_interactionErrorCounter), sv::log::llError, sv::log::mtError);
+    qDebug() << str + QString (". Количество идущих подряд ошибок взаимодействия : %1").arg(m_interactionErrorCounter);
+
+    // Если счётчик подряд идущих ошибок взаимодействия АПАК с КСОН больше значения
+    // указанного в протоколе:
+    if (m_interactionErrorCounter >= m_params.numberOfErrors)
+    {
+        qDebug() << QString ("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом");
+        emit message(QString("АПАК: Выдаём команду интерфейсной части на разрыв соединения с TCP-клиентом"), sv::log::llError, sv::log::mtError);
+
+        // Испускаем для интерфейсной части сигнал "say" с командой "breakConnection",
+        // который приказывает интерфейсной части разорвать соединение с КСОН:
+        emit p_io_buffer->say("breakConnection");
+
+        // Сбрасываем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН:
+        m_interactionErrorCounter = 0;
+    }
+}
 
 
 /** ********** EXPORT ************ **/

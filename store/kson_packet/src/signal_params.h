@@ -24,7 +24,8 @@
 //                  в информационном блоке информационного кадра":
 #define LEN           "len"
 
-// Имя параметра "тип данных сигнала" ("unsigned", "float", "boolean")".
+// Имя параметра "тип данных сигнала" - задаётся значением (boolType, unsignedType, floatType)
+//                  из перечиcления "dataType":
 #define DATA_TYPE     "data_type"
 
 // Имя параметра "максимальное значение сигнала". Этот параметр используется для проверки
@@ -44,13 +45,21 @@
 #define GROUP       "group"
 
 // Значение по умолчанию для параметра "тип данных сигнала" ("unsigned", "float", "boolean")":
-#define DEFAULT_DATA_TYPE "float"
+#define DEFAULT_DATA_TYPE   floatType
 
 // Значение по умолчанию для параметра "максимальное значение сигнала"
 #define DEFAULT_MAX 0
 
 // Значение по умолчанию для параметра "минимальное значение сигнала"
 #define DEFAULT_MIN 0
+
+// Перечисление возможных для сигнала КСОН типов данных:
+enum dataType : quint8
+{
+    boolType, // булевский тип (1 бит)
+    unsignedType, // тип беззнакового целого (2 байта)
+    floatType // число с плавающей запятой (4 байта)
+};
 
 namespace apak
 {
@@ -79,8 +88,9 @@ namespace apak
         //                  в информационном блоке информационного кадра":
         quint8 len;
 
-        // Тип данных сигнала ("unsigned", "float", "boolean"):
-        QString data_type;
+        // Тип данных сигнала - задаётся значением (boolType, unsignedType, floatType)
+        //                  из перечиcления "dataType":
+        quint8 data_type;
 
         // Максимальное значение сигнала:
         float max;
@@ -191,7 +201,13 @@ namespace apak
                                 .arg(object.value(P).toString())
                                 .arg("Тип данных сигнала может быть: boolean, unsigned или float"));
 
-                p.data_type = object.value(P).toString();
+                //p.data_type = object.value(P).toString();
+                if (cmp_boolean == 0)
+                    p.data_type = boolType;
+                if (cmp_unsigned == 0)
+                    p.data_type = unsignedType;
+                if (cmp_float == 0)
+                    p.data_type = floatType;
             }
             else
                 p.data_type = DEFAULT_DATA_TYPE;
