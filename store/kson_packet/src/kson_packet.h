@@ -230,6 +230,10 @@ namespace apak {
 
     // Обработка ошибки протокола.
     void protocolErrorHandling (QString str);
+
+    // Функция передаёт данные от протокольной к интерфейcной части (для передачи по линии связи).
+    // Аргумент: "data" - массив байт для передачи
+    void transferToInterface (QByteArray data);
   };
 }
 
