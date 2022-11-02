@@ -514,22 +514,14 @@ void apak::SvKsonImitator::sendInformFrame(void)
     //qDebug() << "Имитатор КСОН: Содержание: " << m_send_data.toHex();
 
     // 8. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
-   p_io_buffer->output->mutex.lock();
-   p_io_buffer->output->setData(m_send_data);
+    transferToInterface (m_send_data);
 
-   emit message(QString(m_send_data.toHex()), lldbg, sv::log::mtNew);
-
-   p_io_buffer->output->setReady(true);
-   emit p_io_buffer->readyWrite(p_io_buffer->output);
-
-   p_io_buffer->output->mutex.unlock();
-
-   // 9. Запускаем таймер подтверждения "m_conformTimer" с периодом,
-   // равным предельно допустимому времени от посылки нами информационного кадра к системе АПАК,
-   // до получения нами пакета подтверждения от системы АПАК. Это время
-   // задаётся  в конфигурационном файле "config_apak_imitator.json", как параметр протокола имитатора
-   // устройства КСОН:
-   m_conformTimer->start(m_params.conform_interval);
+    // 9. Запускаем таймер подтверждения "m_conformTimer" с периодом,
+    // равным предельно допустимому времени от посылки нами информационного кадра к системе АПАК,
+    // до получения нами пакета подтверждения от системы АПАК. Это время
+    // задаётся  в конфигурационном файле "config_apak_imitator.json", как параметр протокола имитатора
+    // устройства КСОН:
+    m_conformTimer->start(m_params.conform_interval);
 }
 
 
@@ -949,12 +941,34 @@ void apak::SvKsonImitator::sendConfirmationPackage(void)
     //qDebug() <<"Имитатор КСОН: Содержание: " << m_send_data.toHex();
 
     // 5. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
+    transferToInterface (m_send_data);
+}
+
+
+void apak::SvKsonImitator::transferToInterface (QByteArray data)
+// Функция передаёт данные от протокольной к интерфейcной части (для передачи по линии связи).
+// Аргумент: "data" - массив байт для передачи
+{
     p_io_buffer->output->mutex.lock();
-    p_io_buffer->output->setData(m_send_data);
+
+    if (p_io_buffer->output->isReady())
+    {   // Если нам надо записать в буфер сообщение (информационный кадр или пакет подтверждения),
+        // а интерфейсная часть ещё не прочла предыдущее сообщение (флаг "is_ready" - установлен),
+        // то вместо функции "setData", мы используем фунцкцию "append", чтобы не "затирать"
+        // предыдущее сообщение, а дополнить его:
+        p_io_buffer ->output->append(data);
+    }
+    else
+    {   // Записываем в буфер сообщение и устанавливаем флаг готовности буфера "is_ready":
+        p_io_buffer->output->setData(data);
+    }
 
     emit message(QString(m_send_data.toHex()), lldbg, sv::log::mtNew);
 
     p_io_buffer->output->setReady(true);
+
+    // Испускаем для интерфейсной части сигнал "readyWrite", по получению которого она
+    // должна начать передачу данных из буфера в интерфейс:
     emit p_io_buffer->readyWrite(p_io_buffer->output);
 
     p_io_buffer->output->mutex.unlock();
