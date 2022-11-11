@@ -469,18 +469,24 @@ void apak::SvKsonPacket::sendInformFrame(void)
         // "m_bitsInformBlock_to_KSON" по индексу "bitNumberInInformBlock":
         modus::SvSignal* signal = m_signal_by_bitNumberInInformBlock_to_KSON.value( bitNumberInInformBlock);
 
-        // 1.2.3. Проверяем актуальна ли информация, содержащаяся в сигнале:
+        // 1.2.3. Получаем имя сигнала:
+        QString signalName = signal ->config() ->name;
+
+        // 1.2.4. Проверяем актуальна ли информация, содержащаяся в сигнале:
         if(!signal->value().isValid() || signal->value().isNull())
         {
             // Информация в сигнале не актуальна -> оставляем соответствующий бит массива
             // "m_bitsInformBlock_to_KSON" нулевым (переходим на следующую итерацию цикла):
+
+            emit message(QString("АПАК: В сигнале, передаваемом на КСОН: %1 типа boolean информация не актуальна").arg(signalName), sv::log::llInfo, sv::log::mtInfo);
+            //qDebug() << QString("АПАК: В сигнале, передаваемом на КСОН: %1 типа boolean информация не актуальна").arg(signalName);
 
             continue;
         }
 
         bool ok;
 
-        // 1.2.4. Теперь проверим представима ли информация в сигнале беззнаковым целым числом:
+        // 1.2.5. Теперь проверим представима ли информация в сигнале беззнаковым целым числом:
         quint8 intValueSignal = signal->value().toUInt(&ok);
         if(ok == false )
         {
@@ -488,19 +494,27 @@ void apak::SvKsonPacket::sendInformFrame(void)
             // оставляем соответствующий бит массива "m_bitsInformBlock_to_KSON" нулевым
             // (переходим на следующую итерацию цикла):
 
+            // Отображаем оператору значение сигнала:
+            emit message(QString("АПАК: Значение сигнала %1 типа boolean, передаваемого на КСОН, не представимо типом unsigned").arg(signalName), sv::log::llInfo, sv::log::mtInfo);
+            //qDebug() << QString("АПАК: Значение сигнала %1 типа boolean, передаваемого на КСОН, не представимо типом unsigned").arg(signalName);
+
             continue;
         }
 
-        // 1.2.5. Получаем номер бита сигнала, который должен храниться в массиве бит
+        // 1.2.6. Получаем номер бита сигнала, который должен храниться в массиве бит
         // "m_bitsInformBlock_to_KSON" по индексу "bitNumberInInformBlock_to_KSON":
         quint8 bitNumberInSignal =
                 m_bitNumberInSignal_by_bitNumberInInformBlock_to_KSON.value (bitNumberInInformBlock);
 
-        // 1.2.6. Получаем и сохраняем бит сигнала в массиве битов "m_bitsInformBlock_to_KSON":
-        m_bitsInformBlock_to_KSON.setBit(bitNumberInInformBlock,
-                                  (intValueSignal>>bitNumberInSignal) & 0x01 ? true: false);
+        // 1.2.7. Получаем и сохраняем бит сигнала в массиве битов "m_bitsInformBlock_to_KSON":
+        bool bitValue = (intValueSignal>>bitNumberInSignal) & 0x01 ? true: false;
+        m_bitsInformBlock_to_KSON.setBit(bitNumberInInformBlock, bitValue);
+
+        // Отображаем оператору значение сигнала:
+        emit message(QString("АПАК: Сигнал, передаваемый на КСОН: %1 типа boolean имеет значение: %2").arg(signalName).arg(bitValue), sv::log::llInfo, sv::log::mtInfo);
+        //qDebug() << QString("АПАК: Сигнал, передаваемый на КСОН: %1 типа boolean имеет значение: %2").arg(signalName).arg(bitValue);
     }
-    // qDebug() << "АПАК: Инфорационный блок информационного кадра от АПАК к КСОН: "<<m_bitsInformBlock_to_KSON;
+    // qDebug() << "АПАК: Информационный блок информационного кадра от АПАК к КСОН: "<<m_bitsInformBlock_to_KSON;
 
      // 1.3. Теперь преобразуем массив бит "m_bitsInformBlock_to_KSON" в массив байт:
      // В этом массиве байт будет содержаться информационный блок информационного кадра от АПАК к КСОН.
@@ -892,8 +906,8 @@ void apak::SvKsonPacket::informFrameFrom_KSON (QByteArray packageFrom_KSON)
                 }
 
                 // Отображаем оператору значение сигнала:
-                emit message(QString("АПАК: В информационном кадре от КСОН сигнал: %1 типа float имеет значение: %2").arg(signalName).arg(unsignedSignal), sv::log::llInfo, sv::log::mtInfo);
-                qDebug() << QString("АПАК: В информационном кадре от КСОН сигнал: %1 типа float имеет значение: %2").arg(signalName).arg(unsignedSignal);
+                emit message(QString("АПАК: В информационном кадре от КСОН сигнал: %1 типа float имеет значение: %2").arg(signalName).arg(floatSignal), sv::log::llInfo, sv::log::mtInfo);
+                qDebug() << QString("АПАК: В информационном кадре от КСОН сигнал: %1 типа float имеет значение: %2").arg(signalName).arg(floatSignal);
                 break;
         } // switch
 
@@ -987,7 +1001,7 @@ void  apak::SvKsonPacket::confirmationPackageFrom_KSON (QByteArray packageFrom_K
     }
 
     // Третье поле (1 байт) - статус.
-    char statusFromPacket = packageFrom_KSON[DATA_SIZE_FIELD_LENGTH + TIME_FIELD_LENGTH];
+    quint8 statusFromPacket = packageFrom_KSON[DATA_SIZE_FIELD_LENGTH + TIME_FIELD_LENGTH];
 
     if (statusFromPacket != 0)
     { // Если значение в поле статуса отлично от 0, то выставляем флаг ошибки пакета подтвердения:
