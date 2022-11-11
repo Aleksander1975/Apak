@@ -359,7 +359,9 @@ void apak::SvKsonImitator::sendInformFrame(void)
         // 5.3.1. Получаем указатель на сигнал:
         modus::SvSignal* signal = m_signals_to_APAK [signalNumberInDataFrame];
 
-        // 5.3.2. Получаем параметры сигнала:
+        // 5.3.2. Получаем имя сигнала и его параметры:
+        QString signalName = signal ->config() ->name;
+
         apak::SignalParams signal_params = m_params_by_signal_to_APAK.value (signal);
 
         // 5.3.3. Проверим актуальна ли информация, содержащаяся в сигнале:
@@ -381,12 +383,18 @@ void apak::SvKsonImitator::sendInformFrame(void)
                     // Этот сигнал представляет тип "boolean" -> для КСОН запишем
                     // в поток целый НУЛЕВОЙ байт
                     dataFrameStream << (quint8) 0x00;
+
+                    emit message(QString("Имитатор КСОН: В сигнале %1 типа boolean, передаваемом на АПАК, информация не актуальна").arg(signalName), sv::log::llInfo, sv::log::mtInfo);
+                    //qDebug() << QString("Имитатор КСОН: В сигнале %1 типа boolean, передаваемом на АПАК, информация не актуальна").arg(signalName);
                     break;
 
                 case unsignedType:
                     // Этот сигнал представляет тип "unsigned" и занимает 4 байта, порядок
                     // которых: big-endian
                     dataFrameStream << (unsigned) 0;
+
+                    emit message(QString("Имитатор КСОН: В сигнале %1 типа unsigned, передаваемом на АПАК, информация не актуальна").arg(signalName), sv::log::llInfo, sv::log::mtInfo);
+                    //qDebug() << QString("Имитатор КСОН: В сигнале %1 типа unsigned, передаваемом на АПАК, информация не актуальна").arg(signalName);
                     break;
 
                 case floatType:
@@ -394,6 +402,9 @@ void apak::SvKsonImitator::sendInformFrame(void)
                     // Этот сигнал представляет тип "float" и занимает 4 байта, порядок
                     //которых: big-endian
                     dataFrameStream << (float) 0;
+
+                    emit message(QString("Имитатор КСОН: В сигнале %1 типа float, передаваемом на АПАК, информация не актуальна").arg(signalName), sv::log::llInfo, sv::log::mtInfo);
+                    //qDebug() << QString("Имитатор КСОН: В сигнале %1 типа float, передаваемом на АПАК, информация не актуальна").arg(signalName);
                     break;
             } // switch
 
@@ -414,12 +425,15 @@ void apak::SvKsonImitator::sendInformFrame(void)
                 // 5.3.4.1.1. Теперь переведём информацию в сигнале в тип "boolean":
                 booleanSignal = signal->value().toBool();
 
+                // Отображаем оператору значение сигнала:
+                emit message(QString("Имитатор КСОН: Сигнал %1 типа boolean, передаваемый на АПАК, имеет значение: %2").arg(signalName).arg(booleanSignal), sv::log::llInfo, sv::log::mtInfo);
+                //qDebug() << QString("Имитатор КСОН: Сигнал %1 типа boolean, передаваемый на АПАК, имеет значение: %2").arg(signalName).arg(booleanSignal);
+
                 // 5.3.4.1.2. Выводим значение сигнала в поток:
                 if (booleanSignal == true)
                     dataFrameStream << (quint8) 0x01;
                 else
                     dataFrameStream << (quint8) 0x00;
-                dataFrameStream << (quint8) 0x00;
                 break;
 
             case unsignedType:
@@ -440,11 +454,19 @@ void apak::SvKsonImitator::sendInformFrame(void)
 
                     // 5.3.4.2.2.2. Запишем в поток НУЛЕВОЕ значение типа "unsigned":
                     dataFrameStream << (unsigned) 0;
+
+                    // Отображаем оператору значение сигнала:
+                    emit message(QString("Имитатор КСОН: Сигнал %1 типа unsigned, передаваемый на АПАК, имеет значение не представимое этим типом").arg(signalName), sv::log::llInfo, sv::log::mtInfo);
+                    //qDebug() << QString("Имитатор КСОН: Сигнал %1 типа unsigned, передаваемый на АПАК, имеет значение не представимое этим типом").arg(signalName);
                 }
                 else
                 {
                     // 5.3.4.2.3. Выводим значение сигнала в поток:
                     dataFrameStream << unsignedSignal;
+
+                    // Отображаем оператору значение сигнала:
+                    emit message(QString("Имитатор КСОН: Сигнал %1 типа unsigned, передаваемый на АПАК, имеет значение: %2").arg(signalName).arg(unsignedSignal), sv::log::llInfo, sv::log::mtInfo);
+                    //qDebug() << QString("Имитатор КСОН: Сигнал %1 типа unsigned, передаваемый на АПАК, имеет значение: %2").arg(signalName).arg(unsignedSignal);
                 }
                 break;
 
@@ -468,11 +490,19 @@ void apak::SvKsonImitator::sendInformFrame(void)
 
                     // 5.3.4.3.2.2. Запишем в поток НУЛЕВОЕ значение типа "float":
                     dataFrameStream << (float) 0;
+
+                    // Отображаем оператору значение сигнала:
+                    emit message(QString("Имитатор КСОН: Сигнал %1 типа float, передаваемый на АПАК, имеет значение не представимое этим типом").arg(signalName), sv::log::llInfo, sv::log::mtInfo);
+                    //qDebug() << QString("Имитатор КСОН: Сигнал %1 типа float, передаваемый на АПАК, имеет значение не представимое этим типом").arg(signalName);
                 }
                 else
                 {
                  // 5.3.4.3.3. Выводим значение сигнала в поток:
                  dataFrameStream << floatSignal;
+
+                 // Отображаем оператору значение сигнала:
+                 emit message(QString("Имитатор КСОН: Сигнал %1 типа float, передаваемый на АПАК, имеет значение: %2").arg(signalName).arg(floatSignal), sv::log::llInfo, sv::log::mtInfo);
+                 //qDebug() << QString("Имитатор КСОН: Сигнал %1 типа float, передаваемый на АПАК, имеет значение: %2").arg(signalName).arg(floatSignal);
                 }
         } // switch
     } // for
@@ -499,19 +529,19 @@ void apak::SvKsonImitator::sendInformFrame(void)
     // "доступность групп" к информационному кадру:
     m_send_data.append(relevanceGroup_Byte_to_APAK);
 
-    // 7.. Добавим к информационному кадру блок параметрической информации,
+    // 7. Добавим к информационному кадру блок параметрической информации,
     // сформированный нами в массиве "dataFrame".
     m_send_data.append (dataFrame);
 
     //qDebug() << "m_relevanceConcrete_by_group_to_APAK" << m_relevanceConcrete_by_group_to_APAK;
 
-    //qDebug() << "Имитатор КСОН: Блок параметрической информации от сети КСОН:";
-    //qDebug() << "Размер: " << dataFrame.length();
-    //qDebug() << "Содержание: " << dataFrame.toHex();
+    qDebug() << "Имитатор КСОН: Блок параметрической информации от сети КСОН:";
+    qDebug() << "Размер: " << dataFrame.length();
+    qDebug() << "Содержание: " << dataFrame.toHex();
 
-    //qDebug() << "Имитатор КСОН: Информационный кадр от сети КСОН:";
-    //qDebug() << "Имитатор КСОН: Размер: " << m_send_data.length();
-    //qDebug() << "Имитатор КСОН: Содержание: " << m_send_data.toHex();
+    qDebug() << "Имитатор КСОН: Информационный кадр от сети КСОН:";
+    qDebug() << "Имитатор КСОН: Размер: " << m_send_data.length();
+    qDebug() << "Имитатор КСОН: Содержание: " << m_send_data.toHex();
 
     // 8. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
     transferToInterface (m_send_data);
@@ -669,7 +699,6 @@ void apak::SvKsonImitator::informFrameFrom_APAK (QByteArray packageFrom_APAK)
 
     // Переведём поле "времени" в численный вид и запишем его в переменную "m_packetTimeFrom_APAK",
     // чтобы использовать его в пакете подтверждения на этот кадр:
-
     m_packetTimeFrom_APAK = 0;
     for (int i = 0; i < TIME_FIELD_LENGTH; i++)
     {
@@ -765,14 +794,17 @@ void apak::SvKsonImitator::informFrameFrom_APAK (QByteArray packageFrom_APAK)
         { // Cигналы группы - актуальны:
 
             emit message(QString("Имитатор КСОН: В информационном кадре от АПАК сигнал: %1 имеет значение: %2").arg(signalName).arg(bitValue), sv::log::llInfo, sv::log::mtInfo);
-            //qDebug() << QString("Имитатор КСОН: В информационном кадре от АПАК сигнал: %1 имеет значение: %2").arg(signalName).arg(bitValue);
+            qDebug() << QString("Имитатор КСОН: В информационном кадре от АПАК сигнал: %1 имеет значение: %2").arg(signalName).arg(bitValue);
         }
         else
         { // Cигналы группы - НЕ актуальны:
             emit message(QString("Имитатор КСОН: В информационном кадре от АПАК сигнал: %1 не актуален").arg(signalName), sv::log::llInfo, sv::log::mtInfo);
-            //qDebug() << QString("Имитатор КСОН: В информационном кадре от АПАК сигнал: %1 не актуален").arg(signalName);
+            qDebug() << QString("Имитатор КСОН: В информационном кадре от АПАК сигнал: %1 не актуален").arg(signalName);
         }
     }
+
+    // Cбрасываем счётчик подряд идущих ошибок взаимодействия АПАК с КСОН.
+    m_interactionErrorCounter = 0;
 
     qDebug() << QString("Имитатор КСОН: Принят информационный кадр от АПАК без ошибок");
     emit message(QString("Имитатор КСОН: Принят информационный кадр от АПАК без ошибок"), sv::log::llInfo, sv::log::mtSuccess);
@@ -824,7 +856,7 @@ void  apak::SvKsonImitator::confirmationPackageFrom_APAK (QByteArray packageFrom
     }
 
     // Третье поле (1 байт) - статус.
-    char statusFromPacket = packageFrom_APAK[DATA_SIZE_FIELD_LENGTH + TIME_FIELD_LENGTH];
+    quint8 statusFromPacket = packageFrom_APAK[DATA_SIZE_FIELD_LENGTH + TIME_FIELD_LENGTH];
 
     if (statusFromPacket != 0)
     { // Если значение в поле статуса отлично от 0, то выставляем флаг ошибки пакета подтвердения:
