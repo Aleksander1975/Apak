@@ -535,13 +535,13 @@ void apak::SvKsonImitator::sendInformFrame(void)
 
     //qDebug() << "m_relevanceConcrete_by_group_to_APAK" << m_relevanceConcrete_by_group_to_APAK;
 
-    qDebug() << "Имитатор КСОН: Блок параметрической информации от сети КСОН:";
-    qDebug() << "Размер: " << dataFrame.length();
-    qDebug() << "Содержание: " << dataFrame.toHex();
+    //qDebug() << "Имитатор КСОН: Блок параметрической информации от сети КСОН:";
+    //qDebug() << "Имитатор КСОН: Размер: " << dataFrame.length();
+    //qDebug() << "Имитатор КСОН: Содержание: " << dataFrame.toHex();
 
-    qDebug() << "Имитатор КСОН: Информационный кадр от сети КСОН:";
-    qDebug() << "Имитатор КСОН: Размер: " << m_send_data.length();
-    qDebug() << "Имитатор КСОН: Содержание: " << m_send_data.toHex();
+    //qDebug() << "Имитатор КСОН: Информационный кадр от сети КСОН:";
+    //qDebug() << "Имитатор КСОН: Размер: " << m_send_data.length();
+    //qDebug() << "Имитатор КСОН: Содержание: " << m_send_data.toHex();
 
     // 8. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
     transferToInterface (m_send_data);
@@ -793,12 +793,12 @@ void apak::SvKsonImitator::informFrameFrom_APAK (QByteArray packageFrom_APAK)
         if (m_relevance_by_group_from_APAK[group] == true)
         { // Cигналы группы - актуальны:
 
-            emit message(QString("Имитатор КСОН: В информационном кадре от АПАК сигнал: %1 имеет значение: %2").arg(signalName).arg(bitValue), sv::log::llInfo, sv::log::mtInfo);
+            //emit message(QString("Имитатор КСОН: В информационном кадре от АПАК сигнал: %1 имеет значение: %2").arg(signalName).arg(bitValue), sv::log::llInfo, sv::log::mtInfo);
             qDebug() << QString("Имитатор КСОН: В информационном кадре от АПАК сигнал: %1 имеет значение: %2").arg(signalName).arg(bitValue);
         }
         else
         { // Cигналы группы - НЕ актуальны:
-            emit message(QString("Имитатор КСОН: В информационном кадре от АПАК сигнал: %1 не актуален").arg(signalName), sv::log::llInfo, sv::log::mtInfo);
+            //emit message(QString("Имитатор КСОН: В информационном кадре от АПАК сигнал: %1 не актуален").arg(signalName), sv::log::llInfo, sv::log::mtInfo);
             qDebug() << QString("Имитатор КСОН: В информационном кадре от АПАК сигнал: %1 не актуален").arg(signalName);
         }
     }
@@ -808,6 +808,11 @@ void apak::SvKsonImitator::informFrameFrom_APAK (QByteArray packageFrom_APAK)
 
     qDebug() << QString("Имитатор КСОН: Принят информационный кадр от АПАК без ошибок");
     emit message(QString("Имитатор КСОН: Принят информационный кадр от АПАК без ошибок"), sv::log::llInfo, sv::log::mtSuccess);
+
+    // Запускаем таймер приёма "m_receiveTimer" с периодом, равным предельно допустимому времени
+    // между получением информационных кадров от АПАК,
+    // заданному  в конфигурационном файле "config_apak_imitator.json", как параметр протокола устройства КСОН:
+    m_receiveTimer->start(m_params.receive_interval);
 
     // Сформируем и пошлём пакет подтверждения:
     sendConfirmationPackage();
@@ -987,7 +992,15 @@ void apak::SvKsonImitator::transferToInterface (QByteArray data)
     {   // Если нам надо записать в буфер сообщение (информационный кадр или пакет подтверждения),
         // а интерфейсная часть ещё не прочла предыдущее сообщение (флаг "is_ready" - установлен),
         // то вместо функции "setData", мы используем фунцкцию "append", чтобы не "затирать"
-        // предыдущее сообщение, а дополнить его:
+        // предыдущее сообщение, а дополнить его. Но предварительно проверяем, есть ли в буфере
+        // место на новые данные:
+
+        // Если в буфере нет места на новые данные, то очищаем его содержимое и
+        // сбрасываем флаг "is_ready":
+        if(p_io_buffer->output->offset + data.length() > p_config->bufsize)
+            p_io_buffer->output->reset();
+
+        // Дополняем буфер новыми данными:
         p_io_buffer ->output->append(data);
     }
     else
