@@ -838,8 +838,8 @@ void apak::SvKsonPacket::informFrameFrom_KSON (QByteArray packageFrom_KSON)
         if (m_relevance_by_group_from_KSON [group] == false)
         { // Если сигналы группы не актуальны -> незачем проверять допустимость их значений:
 
-            //emit message(QString("АПАК: В информационном кадре от КСОН сигнал: %1 не актуален").arg(signalName), sv::log::llInfo, sv::log::mtInfo);
-            //qDebug() << QString("АПАК: В информационном кадре от КСОН сигнал: %1 не актуален").arg(signalName);
+            emit message(QString("АПАК: В информационном кадре от КСОН сигнал: %1 не актуален").arg(signalName), sv::log::llInfo, sv::log::mtInfo);
+            qDebug() << QString("АПАК: В информационном кадре от КСОН сигнал: %1 не актуален").arg(signalName);
 
             continue;
         }
@@ -900,7 +900,7 @@ void apak::SvKsonPacket::informFrameFrom_KSON (QByteArray packageFrom_KSON)
 
                     m_status |= PARAMETRIC_INFOBLOCK_ERROR;
 
-                    protocolErrorHandling (QString("АПАК: В информационном кадре от КСОН сигнал: %1, типа float, cо значением %2 выходит за диапазон c минимальным значением: %3 и максимальным значением: %4").arg(signalName).arg (unsignedSignal).arg(min).arg(max));
+                    protocolErrorHandling (QString("АПАК: В информационном кадре от КСОН сигнал: %1, типа float, cо значением %2 выходит за диапазон c минимальным значением: %3 и максимальным значением: %4").arg(signalName).arg (floatSignal).arg(min).arg(max));
 
                     continue;
                 }
@@ -953,6 +953,11 @@ void apak::SvKsonPacket::informFrameFrom_KSON (QByteArray packageFrom_KSON)
        m_state_signal->setValue(int(1));
     }
     // p_last_parsed_time = QDateTime::currentDateTime();
+
+    // Запускаем таймер приёма "m_receiveTimer" с периодом, равным предельно допустимому времени
+    // между получением информационных кадров от КСОН,
+    // заданному  в конфигурационном файле "config_apak.json", как параметр протокола устройства КСОН:
+    m_receiveTimer->start(m_params.receive_interval);
 
     // Сформируем и пошлём пакет подтверждения:
     sendConfirmationPackage();
@@ -1142,7 +1147,15 @@ void apak::SvKsonPacket::transferToInterface (QByteArray data)
     {   // Если нам надо записать в буфер сообщение (информационный кадр или пакет подтверждения),
         // а интерфейсная часть ещё не прочла предыдущее сообщение (флаг "is_ready" - установлен),
         // то вместо функции "setData", мы используем фунцкцию "append", чтобы не "затирать"
-        // предыдущее сообщение, а дополнить его:
+        // предыдущее сообщение, а дополнить его. Но предварительно проверяем, есть ли в буфере
+        // место на новые данные:
+
+        // Если в буфере нет места на новые данные, то очищаем его содержимое и
+        // сбрасываем флаг "is_ready":
+        if(p_io_buffer->output->offset + data.length() > p_config->bufsize)
+            p_io_buffer->output->reset();
+
+        // Дополняем буфер новыми данными:
         p_io_buffer ->output->append(data);
     }
     else
