@@ -621,12 +621,20 @@ void apak::SvKsonPacket::messageFrom_KSON(modus::BUFF* buffer)
     // - из информационного кадра и пакета подтверждения в любом порядке
     // в массив "messageFrom_KSON":
     QByteArray messageFrom_KSON = QByteArray(buffer->data, buffer->offset);
+    // qDebug() << "АПАК: messageFrom_KSON - длина принятого от КСОН сообщения: " << messageFrom_KSON.length();
 
     buffer->reset();
 
 
     // Разбираемся с принятым от сети КСОН сообщением:
-    // qDebug() << "АПАК: messageFrom_KSON - длина принятого от КСОН сообщения: " << messageFrom_KSON.length();
+
+    if(m_data_signal)
+    { // Если в файле конфигурации сигналов КСОН имеется "сигнал данных", то присваиваем ему
+      // значение, пришедшего от сети КСОН сообщения:
+
+        m_data_signal->setValue(QVariant(messageFrom_KSON));
+        emit message(QString("signal %1 updated").arg(m_data_signal->config()->name), sv::log::llDebug, sv::log::mtParse);
+    }
 
     if (messageFrom_KSON.length() < DATA_SIZE_FIELD_LENGTH)
     {
@@ -714,6 +722,11 @@ void apak::SvKsonPacket::analysisMessageFrom_KSON(QByteArray& messageFrom_KSON)
     // Поле "размера данных" не соответствует ни информационному кадру, ни пакету подтверждения
     // - это ошибка, обрабатываем её:
     protocolErrorHandling (QString("АПАК: Поле размера данных в сообщении от КСОН содержит неверную информацию: %1").arg(sizeField));
+
+    // Разобрать что принято, если поле "размер данных" содержит значение не соответствующее ни
+    // информационному кадру, ни пакету подтверждения - мы не сможем, поэтому очищаем массив
+    // messageFrom_KSON:
+    messageFrom_KSON.clear();
     return;
 }
 
@@ -725,14 +738,6 @@ void apak::SvKsonPacket::informFrameFrom_KSON (QByteArray packageFrom_KSON)
 {
     // Останавливаем таймер приёма:
     m_receiveTimer->stop();
-
-    if(m_data_signal)
-    { // Если в файле конфигурации сигналов КСОН имеется "сигнал данных", то присваиваем ему
-      // значение, пришедшего от сети КСОН информационного кадра:
-
-        m_data_signal->setValue(QVariant(packageFrom_KSON));
-        emit message(QString("signal %1 updated").arg(m_data_signal->config()->name), sv::log::llDebug, sv::log::mtParse);
-    }
 
     // Аргумент функции "packageFrom_KSON", содержит информационный кадр от КСОН.
     // Правильность информационного кадра в данной версии протокола можно проверить
