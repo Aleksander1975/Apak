@@ -1,16 +1,16 @@
 ﻿#include "kson_imitator.h"
 
 // Длина (в байтах) поля "размера данных" в информационном кадре и в пакете подтверждения:
-#define DATA_SIZE_FIELD_LENGTH              4
+#define DATA_SIZE_FIELD_LENGTH              8
 
 // Длина (в байтах) поля "времени" в информационном кадре и в пакете подтверждения:
-#define TIME_FIELD_LENGTH                   4
+#define TIME_FIELD_LENGTH                   8
 
 // Длина (в байтах) поля "доступности групп" в информационном кадре:
 #define GROUP_AVAILABILITY_FIELD_LENGTH     2
 
 // Длина (в байтах) поля "статуса" в пакете подтверждения:
-#define STATUS_FIELD_LENGTH                 1
+#define STATUS_FIELD_LENGTH                 8
 
 // Флаг ошибки структуры информационного кадра:
 #define INFO_FRAME_ERROR            1
@@ -539,9 +539,9 @@ void apak::SvKsonImitator::sendInformFrame(void)
     //qDebug() << "Имитатор КСОН: Размер: " << dataFrame.length();
     //qDebug() << "Имитатор КСОН: Содержание: " << dataFrame.toHex();
 
-    //qDebug() << "Имитатор КСОН: Информационный кадр от сети КСОН:";
-    //qDebug() << "Имитатор КСОН: Размер: " << m_send_data.length();
-    //qDebug() << "Имитатор КСОН: Содержание: " << m_send_data.toHex();
+    qDebug() << "Имитатор КСОН: Информационный кадр от сети КСОН:";
+    qDebug() << "Имитатор КСОН: Размер: " << m_send_data.length();
+    qDebug() << "Имитатор КСОН: Содержание: " << m_send_data.toHex();
 
     // 8. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
     transferToInterface (m_send_data);
@@ -866,8 +866,17 @@ void  apak::SvKsonImitator::confirmationPackageFrom_APAK (QByteArray packageFrom
         protocolErrorHandling(QString("Имитатор КСОН: Время в пакете подтверждения от АПАК: %1 не совпадает с временем в информационном кадре: %2").arg(timeSince_1970).arg(m_packetTimeTo_APAK));
     }
 
-    // Третье поле (1 байт) - статус.
-    quint8 statusFromPacket = packageFrom_APAK[DATA_SIZE_FIELD_LENGTH + TIME_FIELD_LENGTH];
+    // Перепишем поле "статуса" в массив "statusField":
+    QByteArray statusField = packageFrom_APAK.mid (DATA_SIZE_FIELD_LENGTH + TIME_FIELD_LENGTH,
+                                                   STATUS_FIELD_LENGTH);
+
+    // Переведём поле "статуса" в численный вид и запишем его в переменную "statusFromPacket":
+    quint64 statusFromPacket = 0;
+    for (int i = 0; i < STATUS_FIELD_LENGTH; i++)
+    {
+        statusFromPacket = statusFromPacket << 8;
+        statusFromPacket |= (uchar)statusField [i];
+    }
 
     if (statusFromPacket != 0)
     { // Если значение в поле статуса отлично от 0, то выставляем флаг ошибки пакета подтвердения:
@@ -974,9 +983,20 @@ void apak::SvKsonImitator::sendConfirmationPackage(void)
     m_send_data.append(timeField);
 
 
-    // 4. Добавляем к пакету подтверждения - поле статуса. Оно сформировано нами в процессе
+    // 4. В массиве "statusField" формируем третье поле пакета подтверждения - поле "статуса".
+    // Значение статуса сформировано нами в переменной "m_status" в процессе
     // разбора информационного кадра от АПАК:
-    m_send_data.append( m_status);
+
+    // Переведём переменную "m_status" в массив "statusField":
+    QByteArray statusField (STATUS_FIELD_LENGTH, 0);
+    for (int i = STATUS_FIELD_LENGTH - 1; i >= 0 ; i--)
+    {
+         statusField [i] = m_status & 0xFF;
+         m_status = m_status >> 8;
+    }
+
+    // Добавляем поле "статуса"  к формируемому пакету подтверждения:
+    m_send_data.append(statusField);
 
 
     //qDebug() <<"Имитатор КСОН: Пакет подтверждения от КСОН к АПАК:";
