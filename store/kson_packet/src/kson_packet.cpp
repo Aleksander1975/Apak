@@ -807,7 +807,7 @@ void apak::SvKsonPacket::informFrameFrom_KSON (QByteArray packageFrom_KSON)
         // Получаем параметры сигнала:
         apak::SignalParams signal_params = m_params_by_signal_from_KSON.value (signal);
 
-        // Выясним тип сигнала ("boolean", "unsigned", "false") и считаем из потока
+        // Выясним тип сигнала ("boolean", "unsigned", "float") и считаем из потока
         // значение cигнала.
 
         // Переменная для получения значения сигнала булевского типа:
