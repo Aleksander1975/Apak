@@ -4,7 +4,7 @@ DEFINES += PU_APAK_LIBRARY
 
 CONFIG += c++11 plugin
 
-TARGET = /home/user/Modus/lib/protocols/pu_apak
+TARGET = /home/user/Modus/lib/protocols/apak_pu
 TEMPLATE = lib
 
 # The following define makes your compiler emit warnings if you use

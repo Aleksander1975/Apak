@@ -248,7 +248,7 @@ void apak::Sv_PU_APAK::sendResponse_POST(void)
         signal_JSON.insert(QString("id"), QJsonValue(identOfSignal));
 
         // 2.5.2. Вставляем пару: "value" и значение переменной "valueOfSignal":
-        signal_JSON.insert(QString("value"), "valueOfSignal");
+        signal_JSON.insert(QString("value"), valueOfSignal);
 
         // Добавляем сформированный JSON-объект "signal_JSON" к
         // JSON-массиву "signalArray_JSON":
