@@ -67,8 +67,9 @@ namespace apak
             QJsonDocument jd = QJsonDocument::fromJson(json_string.toUtf8(), &err);
 
             if(err.error != QJsonParseError::NoError)
-                throw SvException(err.errorString());
-
+            {
+                throw SvException(QString("ПУ АПАК: Ошибка при разборе параметров сигнала: ") + err.errorString());
+            }
             try
             {
                 return fromJsonObject(jd.object());
@@ -102,11 +103,12 @@ namespace apak
                 int cmp_unsigned = t.compare("unsigned", Qt::CaseInsensitive);
 
                 if (cmp_boolean != 0 && cmp_float != 0 && cmp_unsigned != 0)
-                    throw SvException(QString(IMPERMISSIBLE_VALUE)
+                {
+                    throw SvException(QString("ПУ АПАК: ") + QString(IMPERMISSIBLE_VALUE)
                                 .arg(P)
                                 .arg(object.value(P).toString())
                                 .arg("Тип данных сигнала может быть: boolean, unsigned или float"));
-
+                }
                 //p.data_type = object.value(P).toString();
                 if (cmp_boolean == 0)
                     p.data_type = boolType;

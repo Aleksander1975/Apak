@@ -40,6 +40,11 @@ bool apak::Sv_PU_APAK::configure(modus::DeviceConfig *config, modus::IOBuffer *i
     }
     catch (SvException& e)
     {
+        // Отображаем оператору сообщение о месте ошибке. Сообщение о самой ошибке
+        // хранится в исключении (e.error) и будет передано в "mdserver" через "p_last_error":
+        emit message(QString("ПУ АПАК: Исключение в функции \"configure\""), sv::log::llError, sv::log::mtError);
+        qDebug() << "ПУ АПАК: Исключение в функции \"configure\"";
+
         p_last_error = e.error;
         return false;
     }
@@ -91,12 +96,9 @@ bool apak::Sv_PU_APAK::bindSignal(modus::SvSignal* signal, modus::SignalBinding 
                 // Заполняем структуру "SignalParams" параметром сигналов, отсылаемых в запросе
                 // POST на другой АПАК ПУ: этим параметром является тип данных сигнала (параметр "data_type").
 
-                // В ранних версиях конфигурационных файлов сигналов параметры сигналов описывались в подразделе "params"
-                // раздела "bindings". Однако позднее подраздел "params" был перенесён из раздела "bindings"
-                // на уровень выше - прямо в общий раздел сигнала (туда же где находятся: идентификатор сигнала,
-                // имя сигнала, описание сигнала...). Поэтому аргументом функции SignalParams::fromJson()
-                // является "signal->config()->params".
-                apak::SignalParams signal_params = apak::SignalParams::fromJson(signal->config()->params);
+                // Параметры сигналов описываются в подразделе "params", следующем за номером устройства,
+                // к которому они привязаны.
+                apak::SignalParams signal_params = apak::SignalParams::fromJson(binding.params);
 
                 // Заносим указатель на сигнал в список "m_signals":
                 m_signals.append(signal);
@@ -111,12 +113,9 @@ bool apak::Sv_PU_APAK::bindSignal(modus::SvSignal* signal, modus::SignalBinding 
             // Заполняем структуру "SignalParams" параметром сигналов, отсылаемых в запросе
             // POST на другой АПАК ПУ: этим параметром является тип данных сигнала (параметр "data_type").
 
-            // В ранних версиях конфигурационных файлов сигналов параметры сигналов описывались в подразделе "params"
-            // раздела "bindings". Однако позднее подраздел "params" был перенесён из раздела "bindings"
-            // на уровень выше - прямо в общий раздел сигнала (туда же где находятся: идентификатор сигнала,
-            // имя сигнала, описание сигнала...). Поэтому аргументом функции SignalParams::fromJson()
-            // является "signal->config()->params".
-            apak::SignalParams signal_params = apak::SignalParams::fromJson(signal->config()->params);
+            // Параметры сигналов описываются в подразделе "params", следующем за номером устройства,
+            // к которому они привязаны.
+            apak::SignalParams signal_params = apak::SignalParams::fromJson(binding.params);
 
             // Заносим указатель на сигнал в список "m_signals":
             m_signals.append(signal);
@@ -132,6 +131,12 @@ bool apak::Sv_PU_APAK::bindSignal(modus::SvSignal* signal, modus::SignalBinding 
 
   catch(SvException& e) {
     p_last_error = e.error;
+
+    // Отображаем оператору сообщение о месте ошибке. Сообщение о самой ошибке
+    // хранится в исключении (e.error) и будет передано в "mdserver" через "p_last_error":
+    emit message(QString("ПУ АПАК: Исключение в функции \"bindSignal\""), sv::log::llError, sv::log::mtError);
+    qDebug() << "ПУ АПАК: Исключение в функции \"bindSignal\"";
+
     return false;
   }
 }

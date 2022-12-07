@@ -35,15 +35,16 @@ namespace apak {
       QJsonDocument jd = QJsonDocument::fromJson(json_string.toUtf8(), &err);
 
       if(err.error != QJsonParseError::NoError)
-        throw SvException(err.errorString());
-
-      try {
-
+      {
+          throw SvException(QString ("ПУ АПАК: Ошибка при разборе параметров протокола: ") + err.errorString());
+       }
+      try
+      {
         return fromJsonObject(jd.object());
-
       }
-      catch(SvException& e) {
-        throw e;
+      catch(SvException& e)
+      {
+          throw e;
       }
     }
 
@@ -64,11 +65,13 @@ namespace apak {
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+        {
+            throw SvException(QString("ПУ АПАК: ") + QString(IMPERMISSIBLE_VALUE)
                             .arg(P)
                             .arg(object.value(P).toString())
                             .arg("Интервал отправки данных на сервер другого ПУ АПАК должен быть задан целым числом в миллисекундах"));
-        p.send_interval = object.value(P).toInt(DEFAULT_SEND_INTERVAL);
+        }
+          p.send_interval = object.value(P).toInt(DEFAULT_SEND_INTERVAL);
       }
       else
         p.send_interval = DEFAULT_SEND_INTERVAL;
