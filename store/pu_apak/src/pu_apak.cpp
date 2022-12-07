@@ -281,8 +281,8 @@ void apak::Sv_PU_APAK::sendResponse_POST(void)
     // где ХХ - это длина массива байт "signalsByteArray_JSON".
 
     QByteArray POST_request;
-    POST_request.append(QString("POST /set_signal_values HTTP/1.1/n") +
-                        QString("Content-Length: %1/n/n").arg(signalsByteArray_JSON.length()));
+    POST_request.append(QString("POST /set_signal_values HTTP/1.1\r\n") +
+                        QString("Content-Length: %1\r\n\r\n").arg(signalsByteArray_JSON.length()));
     POST_request.append(signalsByteArray_JSON);
 
     // 3. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
