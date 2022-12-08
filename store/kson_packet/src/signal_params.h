@@ -114,8 +114,9 @@ namespace apak
             QJsonDocument jd = QJsonDocument::fromJson(json_string.toUtf8(), &err);
 
             if(err.error != QJsonParseError::NoError)
-                throw SvException(err.errorString());
-
+            {
+                throw SvException(QString("АПАК-КСОН: Ошибка при разборе параметров сигнала: ") + err.errorString());
+            }
             try
             {
                 return fromJsonObject(jd.object());
@@ -143,7 +144,7 @@ namespace apak
             if(object.contains(P))
             {
                 if(object.value(P).toInt(-1) < 0)
-                    throw SvException(QString(IMPERMISSIBLE_VALUE)
+                    throw SvException(QString("АПАК-КСОН: ") + QString(IMPERMISSIBLE_VALUE)
                                .arg(P)
                                .arg(object.value(P).toInt())
                                .arg("Смещение байта, в котором хранится значение сигнала "
@@ -152,7 +153,7 @@ namespace apak
                 p.byte = object.value(P).toInt();
             }
             else
-                throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
+                throw SvException(QString("АПАК-КСОН: ") + QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
 
             // Считываем значение параметра "смещение области битов, в которой хранится значение
             // сигнала, от начала байта":
@@ -160,7 +161,7 @@ namespace apak
             if(object.contains(P))
             {
                 if(object.value(P).toInt(-1) < 0)
-                    throw SvException(QString(IMPERMISSIBLE_VALUE)
+                    throw SvException(QString("АПАК-КСОН: ") + QString(IMPERMISSIBLE_VALUE)
                                .arg(P)
                                .arg(object.value(P).toInt())
                                .arg("Смещение области битов, в которой хранится значение "
@@ -169,14 +170,14 @@ namespace apak
                 p.offset = object.value(P).toInt();
             }
             else
-                throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
+                throw SvException(QString("АПАК-КСОН: ") + QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
 
             // Считываем значение параметра "размер области битов":
             P = LEN;
             if(object.contains(P))
             {
                 if(object.value(P).toInt(-1) < 0)
-                    throw SvException(QString(IMPERMISSIBLE_VALUE)
+                    throw SvException(QString("АПАК-КСОН: ") + QString(IMPERMISSIBLE_VALUE)
                                .arg(P)
                                .arg(object.value(P).toInt())
                                .arg("Размер области битов должен быть задан целым числом"));
@@ -184,7 +185,7 @@ namespace apak
                 p.len = object.value(P).toInt();
             }
             else
-                throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
+                throw SvException(QString("АПАК-КСОН: ") + QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
 
             // Считываем значение параметра "Тип данных сигнала":
             P = DATA_TYPE;
@@ -196,7 +197,7 @@ namespace apak
                 int cmp_unsigned = t.compare("unsigned", Qt::CaseInsensitive);
 
                 if (cmp_boolean != 0 && cmp_float != 0 && cmp_unsigned != 0)
-                    throw SvException(QString(IMPERMISSIBLE_VALUE)
+                    throw SvException(QString("АПАК-КСОН: ") + QString(IMPERMISSIBLE_VALUE)
                                 .arg(P)
                                 .arg(object.value(P).toString())
                                 .arg("Тип данных сигнала может быть: boolean, unsigned или float"));
@@ -217,7 +218,7 @@ namespace apak
             if(object.contains(P))
             {
                 if(object.value(P).isDouble() == false)
-                    throw SvException(QString(IMPERMISSIBLE_VALUE)
+                    throw SvException(QString("АПАК-КСОН: ") + QString(IMPERMISSIBLE_VALUE)
                                 .arg(P)
                                 .arg(object.value(P).toDouble())
                                 .arg("Максимальное значение сигнала должено быть задано числом"));
@@ -232,7 +233,7 @@ namespace apak
             if(object.contains(P))
             {
                 if(object.value(P).isDouble() == false)
-                    throw SvException(QString(IMPERMISSIBLE_VALUE)
+                    throw SvException(QString("АПАК-КСОН: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toDouble())
                                  .arg("Минимальное значение сигнала должено быть задано числом"));
@@ -247,7 +248,7 @@ namespace apak
             if(object.contains(P))
             {
                 if(object.value(P).toInt(-1) < 0)
-                    throw SvException(QString(IMPERMISSIBLE_VALUE)
+                    throw SvException(QString("АПАК-КСОН: ") + QString(IMPERMISSIBLE_VALUE)
                                .arg(P)
                                .arg(object.value(P).toInt())
                                .arg("Номер группы должен быть задан целым числом"));
@@ -255,7 +256,7 @@ namespace apak
                 p.group = object.value(P).toInt();
             }
             else
-                throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
+                throw SvException(QString("АПАК-КСОН: ") + QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
 
             return p;
         }

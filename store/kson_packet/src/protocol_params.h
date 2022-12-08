@@ -124,7 +124,7 @@ namespace apak {
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("АПАК-КСОН: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                             .arg(P)
                             .arg(object.value(P).toString())
                             .arg("Интервал отправки данных должен быть задан целым числом в миллисекундах"));
@@ -138,7 +138,7 @@ namespace apak {
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("АПАК-КСОН: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toString())
                                  .arg("Предельно допустимый интервал между информационными кадрами должен быть задан целым числом в миллисекундах"));
@@ -154,7 +154,7 @@ namespace apak {
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("АПАК-КСОН: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toString())
                                  .arg("Предельно допустимый интервал между информационным кадром и пакетом подтверждения должен быть задан целым числом в миллисекундах"));
@@ -169,7 +169,7 @@ namespace apak {
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("АПАК-КСОН: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toString())
                                  .arg("Размер информационного блока в информационном кадре ПОСЫЛАЕМОМ АПАК к КСОН должен быть задан целым числом"));
@@ -184,7 +184,7 @@ namespace apak {
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("АПАК-КСОН: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toString())
                                  .arg("Размер информационного блока в информационном кадре ПРИНИМАЕМОМ АПАК от КСОН должен быть задан целым числом"));
@@ -199,7 +199,7 @@ namespace apak {
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("АПАК-КСОН: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toString())
                                  .arg("Предельно допустимое количество идущих подряд ошибок взаимодействия должно быть задано целым числом"));
