@@ -132,10 +132,13 @@ bool apak::Sv_PU_APAK::bindSignal(modus::SvSignal* signal, modus::SignalBinding 
   catch(SvException& e) {
     p_last_error = e.error;
 
+    //Получаем имя сигнала:
+    QString signalName = signal ->config() ->name;
+
     // Отображаем оператору сообщение о месте ошибке. Сообщение о самой ошибке
     // хранится в исключении (e.error) и будет передано в "mdserver" через "p_last_error":
-    emit message(QString("ПУ АПАК: Исключение в функции \"bindSignal\""), sv::log::llError, sv::log::mtError);
-    qDebug() << "ПУ АПАК: Исключение в функции \"bindSignal\"";
+    emit message(QString("ПУ АПАК: Исключение в функции \"bindSignal\"на сигнале: %1").arg(signalName), sv::log::llError, sv::log::mtError);
+    qDebug() << QString("ПУ АПАК: Исключение в функции \"bindSignal\"на сигнале: %1").arg(signalName);
 
     return false;
   }
