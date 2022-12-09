@@ -94,8 +94,9 @@ namespace apak {
       QJsonDocument jd = QJsonDocument::fromJson(json_string.toUtf8(), &err);
 
       if(err.error != QJsonParseError::NoError)
-        throw SvException(err.errorString());
-
+      {
+        throw SvException(QString ("АПАК-КСОН: Ошибка при разборе параметров протокола: ") + err.errorString());
+      }
       try {
 
         return fromJsonObject(jd.object());
