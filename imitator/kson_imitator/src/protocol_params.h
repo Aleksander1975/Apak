@@ -95,7 +95,7 @@ namespace apak {
       QJsonDocument jd = QJsonDocument::fromJson(json_string.toUtf8(), &err);
 
       if(err.error != QJsonParseError::NoError)
-        throw SvException(err.errorString());
+        throw SvException(QString("Имитатор КСОН: Ошибка при разборе параметров протокола: ") + err.errorString());
 
       try {
 
@@ -125,7 +125,7 @@ namespace apak {
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("Имитатор КСОН: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                             .arg(P)
                             .arg(object.value(P).toString())
                             .arg("Интервал отправки данных должен быть задан целым числом в миллисекундах"));
@@ -139,7 +139,7 @@ namespace apak {
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("Имитатор КСОН: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toString())
                                  .arg("Предельно допустимый интервал между информационными кадрами должен быть задан целым числом в миллисекундах"));
@@ -155,7 +155,7 @@ namespace apak {
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("Имитатор КСОН: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toString())
                                  .arg("Предельно допустимый интервал между информационным кадром и пакетом подтверждения должен быть задан целым числом в миллисекундах"));
@@ -170,7 +170,7 @@ namespace apak {
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("Имитатор КСОН: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toString())
                                  .arg("Размер информационного блока в информационном кадре ПОСЫЛАЕМОМ имитатором КСОН к АПАК должен быть задан целым числом"));
@@ -185,7 +185,7 @@ namespace apak {
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("Имитатор КСОН: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toString())
                                  .arg("Размер информационного блока в информационном кадре ПРИНИМАЕМОМ имитатором КСОН от АПАК должен быть задан целым числом"));
@@ -200,7 +200,7 @@ namespace apak {
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("Имитатор КСОН: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toString())
                                  .arg("Предельно допустимое количество идущих подряд ошибок взаимодействия должно быть задано целым числом"));

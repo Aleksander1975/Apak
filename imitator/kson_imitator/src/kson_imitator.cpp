@@ -84,6 +84,11 @@ bool apak::SvKsonImitator::configure(modus::DeviceConfig *config, modus::IOBuffe
     }
     catch (SvException& e)
     {
+        // Отображаем оператору сообщение о месте ошибке. Сообщение о самой ошибке
+        // хранится в исключении (e.error) и будет передано в "mdserver" через "p_last_error":
+        emit message(QString("Имитатор КСОН: Исключение в функции \"configure\""), sv::log::llError, sv::log::mtError);
+        qDebug() << "Имитатор КСОН: Исключение в функции \"configure\"";
+
         p_last_error = e.error;
         return false;
     }
@@ -177,6 +182,15 @@ bool apak::SvKsonImitator::bindSignal(modus::SvSignal *signal, modus::SignalBind
     catch(SvException& e)
     {
         p_last_error = e.error;
+
+        //Получаем имя сигнала:
+        QString signalName = signal ->config() ->name;
+
+        // Отображаем оператору сообщение о месте ошибке. Сообщение о самой ошибке
+        // хранится в исключении (e.error) и будет передано в "mdserver" через "p_last_error":
+        emit message(QString("Имитатор КСОН: Исключение в функции \"bindSignal\" на сигнале: %1").arg(signalName), sv::log::llError, sv::log::mtError);
+        qDebug() << QString ("Имитатор КСОН: Исключение в функции \"bindSignal\" на сигнале %1").arg(signalName);
+
         return false;
     }
 }
