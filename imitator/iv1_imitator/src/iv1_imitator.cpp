@@ -28,23 +28,27 @@ bool apak::SvIv1Imitator::configure(modus::DeviceConfig *config, modus::IOBuffer
 // Её цель - инициализировать все структуры, необходимые нам для конкретного
 // имитатора (в данном случае, имитатора ИВ-1).
 {
-  try
+    try
     {
+        p_config = config;
+        p_io_buffer = iobuffer;
 
-    p_config = config;
-    p_io_buffer = iobuffer;
+        // Заполняем структуру m_params параметром протокола обмена ИВ-1 с системой АПАК
+        // (периодом поступления данных в мс от ИВ-1 в систему АПАК)
+        m_params = iv1::ProtocolParams::fromJson(p_config->protocol.params);
 
-    // Заполняем структуру m_params параметром протокола обмена ИВ-1 с системой АПАК
-    // (периодом поступления данных в мс от ИВ-1 в систему АПАК)
-    m_params = iv1::ProtocolParams::fromJson(p_config->protocol.params);
-
-    return true;
+        return true;
     }
-    catch (SvException& e) {
+    catch (SvException& e)
+    {
+         // Отображаем оператору сообщение о месте ошибке. Сообщение о самой ошибке
+         // хранится в исключении (e.error) и будет передано в "mdserver" через "p_last_error":
+         emit message(QString("Имитатор ИВ-1: Исключение в функции \"configure\""), sv::log::llError, sv::log::mtError);
+         qDebug() << "Имитатор ИВ-1: Исключение в функции \"configure\"";
 
-    p_last_error = e.error;
-    return false;
-  } 
+        p_last_error = e.error;
+        return false;
+    }
 }
 
 bool apak::SvIv1Imitator::bindSignal(modus::SvSignal* signal, modus::SignalBinding binding)
@@ -65,8 +69,17 @@ bool apak::SvIv1Imitator::bindSignal(modus::SvSignal* signal, modus::SignalBindi
 
     // Заполняем структуру SignalParams параметрами конкретного сигнала устройства ИВ-1:
     // (порядковым номером датчика, старшим байтом заводского номера датчика, младшим
-    // байтом заводского номера датчика, типом сигнала(температура или влажность)):
-    iv1::SignalParams signal_params = iv1::SignalParams::fromJson(binding.params);
+    // байтом заводского номера датчика, типом сигнала(температура или влажность)).
+
+    // Параметры сигналов устройства описываются в файле сигналов имитатора конкретного устройства.
+    // В ранних версиях имитаторов устройств параметры сигналов описывались в подразделе "params"
+    // раздела "bindings" или "master". Однако, поскольку файл сигналов имитатора конкретного устройства
+    // используется, помимо имитатора, еще программой для отображения информации, записанной от
+    // этого устройства в чёрный ящик, то подраздел "params" был перенесён из разделов "bindings"
+    // или "master" на уровень выше - прямо в общий раздел сигнала (туда же где находятся:
+    // идентификатор сигнала, имя сигнала, описание сигнала...). Поэтому аргументом функции
+    // SignalParams::fromJson() является "signal->config()->params".
+    iv1::SignalParams signal_params = iv1::SignalParams::fromJson(signal->config()->params);
 
     if(r)
     {
@@ -95,6 +108,15 @@ bool apak::SvIv1Imitator::bindSignal(modus::SvSignal* signal, modus::SignalBindi
   catch(SvException& e)
   {
     p_last_error = e.error;
+
+    //Получаем имя сигнала:
+    QString signalName = signal ->config() ->name;
+
+    // Отображаем оператору сообщение о месте ошибке. Сообщение о самой ошибке
+    // хранится в исключении (e.error) и будет передано в "mdserver" через "p_last_error":
+    emit message(QString("Имитатор ИВ-1: Исключение в функции \"bindSignal\" на сигнале: %1").arg(signalName), sv::log::llError, sv::log::mtError);
+    qDebug() << QString ("Имитатор ИВ-1: Исключение в функции \"bindSignal\" на сигнале %1").arg(signalName);
+
     return false;
   }
 }
@@ -124,7 +146,7 @@ void apak::SvIv1Imitator::send()
 // устройства ИВ-1 в систему АПАК (в соответствии с протоколом обмена) и инициируем передачу
 // этого пакета от протокольной к интерфейcной части имитатора (для передачи по линии связи).
 {
-    qDebug () << "Вызов send()";
+    qDebug () << "Имитатор ИВ-1: Вызов send()";
 
     if(p_is_active)
     {
@@ -237,10 +259,10 @@ void apak::SvIv1Imitator::send()
             packageBody.append(infoFromTheSensor);
         } // foreach
 
-       qDebug() << "Тело пакета от имитатора устройства ИВ-1 "
+       qDebug() << "Имитатор ИВ-1: Тело пакета от имитатора устройства ИВ-1 "
                    "(без заголовка и контрольной суммы, до удвоения байтов 0x1F, 0x2F, 0x55): ";
-       qDebug() << "Размер: " << packageBody.length();
-       qDebug() << "Содержание: " << packageBody.toHex();
+       qDebug() << "Имитатор ИВ-1: Размер: " << packageBody.length();
+       qDebug() << "Имитатор ИВ-1: Содержание: " << packageBody.toHex();
 
        // 3. Считаем контрольную сумму тела пакета:
        quint16 crc = crc::crc16ccitt(packageBody);
@@ -264,10 +286,10 @@ void apak::SvIv1Imitator::send()
            }          
        } // for (
 
-       qDebug() << "Тело пакета от имитатора устройства ИВ-1 "
+       qDebug() << "Имитатор ИВ-1: Тело пакета от имитатора устройства ИВ-1 "
                    "(без заголовка, но с контрольной суммой, после удвоения байтов 0x1F, 0x2F, 0x55): ";
-       qDebug() << "Размер: " << packageBody.length();
-       qDebug() << "Содержание: " << packageBody.toHex();
+       qDebug() << "Имитатор ИВ-1: Размер: " << packageBody.length();
+       qDebug() << "Имитатор ИВ-1: Содержание: " << packageBody.toHex();
 
        // 6. Добавляем к заголовку пакета (находящемуся в массиве байт m_send_data) тело пакета и
        // контрольную сумму (после увдоения символов 0x1F, 0x2F, 0x55):
@@ -277,9 +299,9 @@ void apak::SvIv1Imitator::send()
        m_send_data.append(0x2F);
        m_send_data.append(0x55);
 
-       qDebug() << "Пакет (в окончательном виде) от имитатора устройства ИВ-1";
-       qDebug() << "Размер: " << m_send_data.length();
-       qDebug() << "Содержание: " << m_send_data.toHex();
+       qDebug() << "Имитатор ИВ-1: Пакет (в окончательном виде) от имитатора устройства ИВ-1";
+       qDebug() << "Имитатор ИВ-1: Размер: " << m_send_data.length();
+       qDebug() << "Имитатор ИВ-1: Содержание: " << m_send_data.toHex();
 
 
        // 8.Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):

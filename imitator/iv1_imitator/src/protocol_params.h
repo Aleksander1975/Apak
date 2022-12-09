@@ -58,12 +58,12 @@ namespace iv1 {
       QJsonDocument jd = QJsonDocument::fromJson(json_string.toUtf8(), &err);
 
       if(err.error != QJsonParseError::NoError)
-        throw SvException(err.errorString());
-
-      try {
-
+      {
+        throw SvException(QString ("Имитатор ИВ-1: Ошибка при разборе параметров протокола: ") + err.errorString());
+      }
+      try
+      {
         return fromJsonObject(jd.object());
-
       }
       catch(SvException& e) {
         throw e;
@@ -85,7 +85,7 @@ namespace iv1 {
       if(object.contains(P)) {
 
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString("Имитатор ИВ-1: ") + QString(IMPERMISSIBLE_VALUE)
                             .arg(P)
                             .arg(object.value(P).toVariant().toString())
                             .arg("Интервал отправки данных должен быть задан целым числом в миллисекундах"));
@@ -151,8 +151,9 @@ namespace iv1 {
       QJsonDocument jd = QJsonDocument::fromJson(json_string.toUtf8(), &err);
 
       if(err.error != QJsonParseError::NoError)
-        throw SvException(err.errorString());
-
+      {
+        throw SvException(QString("Имитатор ИВ-1: Ошибка при разборе параметров сигнала: ") + err.errorString());
+      }
       try {
 
         return fromJsonObject(jd.object());
@@ -178,7 +179,7 @@ namespace iv1 {
       if(object.contains(P)) {
 
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString("Имитатор ИВ-1: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toVariant().toString())
                                  .arg("Порядковый номер датчика должен быть задан целым числом"));
@@ -187,14 +188,14 @@ namespace iv1 {
 
       }
       else
-        throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
+        throw SvException(QString("Имитатор ИВ-1: ") + QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
 
       // Считываем значение параметра "Старший байт заводского номера датчика":
       P = HIGH_BYTE_OF_SENSOR_FACTORY_NUMBER;
       if(object.contains(P)) {
 
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString("Имитатор ИВ-1: ") + QString(IMPERMISSIBLE_VALUE)
                             .arg(P)
                             .arg(object.value(P).toVariant().toString())
                             .arg("Старший байт заводского номера датчика должен быть задан целым числом"));
@@ -203,14 +204,14 @@ namespace iv1 {
 
       }
       else
-        throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
+        throw SvException(QString("Имитатор ИВ-1: ") + QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
 
       // Считываем значение параметра "Младший байт заводского номера датчика":
       P = LOW_BYTE_OF_SENSOR_FACTORY_NUMBER;
       if(object.contains(P)) {
 
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString("Имитатор ИВ-1: ") + QString(IMPERMISSIBLE_VALUE)
                             .arg(P)
                             .arg(object.value(P).toVariant().toString())
                             .arg("Младший байт заводского номера датчика должен быть задан целым числом"));
@@ -219,14 +220,14 @@ namespace iv1 {
 
       }
       else
-        throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
+        throw SvException(QString("Имитатор ИВ-1: ") + QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
 
       // Считываем значение параметра "Тип сигнала" (0 - температура, 1 - влажность):
       P = SIGNAL_TYPE;
       if(object.contains(P)) {
 
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString("Имитатор ИВ-1: ") + QString(IMPERMISSIBLE_VALUE)
                             .arg(P)
                             .arg(object.value(P).toVariant().toString())
                             .arg("Тип сигнала должен быть: 0 - для температуры или 1 - для влажности"));
@@ -235,7 +236,7 @@ namespace iv1 {
 
       }
       else
-        throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
+        throw SvException(QString("Имитатор ИВ-1: ") + QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
 
       return p;
 
