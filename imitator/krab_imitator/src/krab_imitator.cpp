@@ -24,26 +24,31 @@ bool apak::SvKrabImitator::configure(modus::DeviceConfig *config, modus::IOBuffe
 // Её цель - инициализировать все структуры, необходимые нам для конкретного
 // имитатора (в данном случае, имитатора КРАБ).
 {
-  try {
+    try
+    {
+        p_config = config;
+        p_io_buffer = iobuffer;
 
-    p_config = config;
-    p_io_buffer = iobuffer;
+        // Заполняем структуру m_params параметром протокола обмена КРАБ'а с системой АПАК
+        // - Смещением байта, в котором хранится значение сигнала, от начала пакета
+        //                "запроса на запись" (количество байт от начала пакета),
+        // - Смещением области битов, в которой хранится значение сигнала, от начала байта
+        //                 (количество бит от начала байта),
+        // - Размером области бит, которая хранит значение сигнала (количество бит).
+        m_params = krab::ProtocolParams::fromJson(p_config->protocol.params);
 
-    // Заполняем структуру m_params параметром протокола обмена КРАБ'а с системой АПАК
-    // - Смещением байта, в котором хранится значение сигнала, от начала пакета
-    //                "запроса на запись" (количество байт от начала пакета),
-    // - Смещением области битов, в которой хранится значение сигнала, от начала байта
-    //                 (количество бит от начала байта),
-    // - Размером области бит, которая хранит значение сигнала (количество бит).
-    m_params = krab::ProtocolParams::fromJson(p_config->protocol.params);
+        return true;
+    }
+    catch (SvException& e)
+    {
+        // Отображаем оператору сообщение о месте ошибке. Сообщение о самой ошибке
+        // хранится в исключении (e.error) и будет передано в "mdserver" через "p_last_error":
+        emit message(QString("Имитатор КРАБ: Исключение в функции \"configure\""), sv::log::llError, sv::log::mtError);
+        qDebug() << "Имитатор КРАБ: Исключение в функции \"configure\"";
 
-    return true;
-
-  } catch (SvException& e) {
-
-    p_last_error = e.error;
-    return false;
-  }
+        p_last_error = e.error;
+        return false;
+    }
 }
 
 bool apak::SvKrabImitator::bindSignal(modus::SvSignal *signal, modus::SignalBinding binding)
@@ -102,8 +107,16 @@ bool apak::SvKrabImitator::bindSignal(modus::SvSignal *signal, modus::SignalBind
   } // try
 
   catch(SvException& e) {
-
     p_last_error = e.error;
+
+    //Получаем имя сигнала:
+    QString signalName = signal ->config() ->name;
+
+    // Отображаем оператору сообщение о месте ошибке. Сообщение о самой ошибке
+    // хранится в исключении (e.error) и будет передано в "mdserver" через "p_last_error":
+    emit message(QString("Имитатор КРАБ: Исключение в функции \"bindSignal\" на сигнале: %1").arg(signalName), sv::log::llError, sv::log::mtError);
+    qDebug() << QString ("Имитатор КРАБ: Исключение в функции \"bindSignal\" на сигнале %1").arg(signalName);
+
     return false;
   }
 }
@@ -130,7 +143,7 @@ void apak::SvKrabImitator::start()
 
 void apak::SvKrabImitator::send()
 {
-    qDebug() << "КРАБ: Вызов send()";
+    qDebug() << "Имитатор КРАБ: Вызов send()";
     if (p_is_active == false)
         return;
 
@@ -192,7 +205,7 @@ void apak::SvKrabImitator::send()
                                   (intValueSignal>>m_bitNumberInSignal) & 0x01 ? true: false);
     }
 
-    qDebug() << m_bitsDataField;
+    qDebug() << "Имитатор КРАБ: " << m_bitsDataField;
      // 3. Теперь преобразуем массив бит "m_bitsDataField" в массив байт:
      // В этом массиве байт будет содержаться поле данных пакета запроса на запись от КРАБ к АПАК.
      // 3.1. Для начала заполняем этот массив байт нулями:
@@ -240,9 +253,9 @@ void apak::SvKrabImitator::send()
      m_send_data.append(quint8(crc & 0xFF));
      m_send_data.append(quint8(crc >> 8));
 
-     qDebug() <<"Пакет (в окончательном виде) от КРАБ:";
-     qDebug() <<"Размер: " << m_send_data.length();
-     qDebug() <<"Содержание: " << m_send_data.toHex();
+     qDebug() <<"Имитатор КРАБ: Пакет (в окончательном виде) от КРАБ:";
+     qDebug() <<"Имитатор КРАБ: Размер: " << m_send_data.length();
+     qDebug() <<"Имитатор КРАБ: Содержание: " << m_send_data.toHex();
 
      // 5. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
      p_io_buffer->output->mutex.lock();

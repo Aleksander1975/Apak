@@ -100,7 +100,7 @@ namespace krab {
       QJsonDocument jd = QJsonDocument::fromJson(json_string.toUtf8(), &err);
 
       if(err.error != QJsonParseError::NoError)
-        throw SvException(err.errorString());
+        throw SvException(QString ("Имитатор КРАБ: Ошибка при разборе параметров протокола: ") + err.errorString());
 
       try {
 
@@ -132,7 +132,7 @@ namespace krab {
       if(object.contains(P)) {
 
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("Имитатор КРАБ: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                             .arg(P)
                             .arg(object.value(P).toVariant().toString())
                             .arg("Адрес устройства Modbus должен быть задан целым числом"));
@@ -148,7 +148,7 @@ namespace krab {
       if(object.contains(P)) {
 
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("Имитатор КРАБ: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                             .arg(P)
                             .arg(object.value(P).toVariant().toString())
                             .arg("Код функции Modbus должен быть задан целым числом"));
@@ -164,7 +164,7 @@ namespace krab {
       if(object.contains(P)) {
 
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("Имитатор КРАБ: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                             .arg(P)
                             .arg(object.value(P).toVariant().toString())
                             .arg("Интервал обновления данных должен быть задан целым числом в миллисекундах"));
@@ -180,7 +180,7 @@ namespace krab {
       if(object.contains(P)) {
 
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString ("Имитатор КРАБ: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                             .arg(P)
                             .arg(object.value(P).toVariant().toString())
                             .arg("Длина поля данных запроса на запись от КРАБа к АПАК должна быть задана целым числом байт"));
@@ -244,20 +244,21 @@ namespace krab {
 
     // Выход: Заполненная параметрами сигнала устройства КРАБ структура SignalParams.
     {
-      QJsonParseError err;
-      QJsonDocument jd = QJsonDocument::fromJson(json_string.toUtf8(), &err);
+        QJsonParseError err;
+        QJsonDocument jd = QJsonDocument::fromJson(json_string.toUtf8(), &err);
 
-      if(err.error != QJsonParseError::NoError)
-        throw SvException(err.errorString());
-
-      try {
-
-        return fromJsonObject(jd.object());
-
-      }
-      catch(SvException& e) {
-        throw e;
-      }
+        if(err.error != QJsonParseError::NoError)
+        {
+            throw SvException(QString("Имитатор КРАБ: Ошибка при разборе параметров сигнала: ") + err.errorString());
+        }
+        try
+        {
+            return fromJsonObject(jd.object());
+        }
+        catch(SvException& e)
+        {
+            throw e;
+        }
     }
 
     static SignalParams fromJsonObject(const QJsonObject &object) //throw (SvException)
@@ -275,7 +276,7 @@ namespace krab {
       if(object.contains(P)) {
 
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString("Имитатор КРАБ: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toVariant().toString())
                                  .arg("Смещение байта от начала пакета должно быть задано целым числом"));
@@ -284,7 +285,7 @@ namespace krab {
 
       }
       else
-        throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
+        throw SvException(QString("Имитатор КРАБ: ") + QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
 
       // Считываем значение параметра "смещение области битов в которой хранится значение
       // сигнала от начала байта":
@@ -292,7 +293,7 @@ namespace krab {
       if(object.contains(P)) {
 
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString("Имитатор КРАБ: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toVariant().toString())
                                  .arg("Cмещение области битов от начала байта должнo быть задано целым числом"));
@@ -301,14 +302,14 @@ namespace krab {
 
       }
       else
-        throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
+        throw SvException(QString("Имитатор КРАБ: ") + QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
 
       // Считываем значение параметра "размер области битов":
       P = LEN;
       if(object.contains(P)) {
 
         if(object.value(P).toInt(-1) < 0)
-          throw SvException(QString(IMPERMISSIBLE_VALUE)
+          throw SvException(QString("Имитатор КРАБ: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toVariant().toString())
                                  .arg("Размер области битов должен быть задан целым числом"));
@@ -317,7 +318,7 @@ namespace krab {
 
       }
       else
-        throw SvException(QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
+        throw SvException(QString("Имитатор КРАБ: ") + QString(MISSING_PARAM_DESC).arg(QString(QJsonDocument(object).toJson(QJsonDocument::Compact))).arg(P));
 
       return p;
    }
