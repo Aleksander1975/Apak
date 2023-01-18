@@ -242,7 +242,7 @@ void apak::SvExchangeSignalDebug::readSignals(void)
         QVariant signalValue = signal ->value();
 
         // Проверяем валидно ли значение сигнала:
-        if( signalValue.isValid() == true)
+        if( signalValue.isValid() == false)
         {
             // Выводим оператору сообщение о невалидности значения сигнала:
             emit message(QString("МП МОС: Cигнал: %1 имеет НЕВАЛИДНОЕ значение").arg(signalName), sv::log::llInfo, sv::log::mtInfo);

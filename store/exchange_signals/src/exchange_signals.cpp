@@ -63,7 +63,7 @@ inline QDataStream& operator>> (QDataStream &stream, QMap <int, modus::SvSignal*
         // Читаем значение сигнала:
         stream >> value;
 
-        // - выбрасываем исключение с сообщением об ошибке:
+        // - Выбрасываем исключение с сообщением об ошибке:
         throw SvException(QString("МОС: Принятый сигнал с идентификатором %1 не привязан к МОС").arg(signalCfg.id));
     }
 
@@ -73,7 +73,7 @@ inline QDataStream& operator>> (QDataStream &stream, QMap <int, modus::SvSignal*
 
     // Читаем время последнего обновления сигнала:
     // !!!--- НЕТ ВОЗМОЖНОСТИ УСТАНОВКИ ВРЕМЕНИ ПОСЛЕДНЕГО ОБНОВЛЕНИЯ СИГНАЛА ---!!!
-    // stream >> signal -> m_last_update;
+    stream >> dataTime; // stream >> signal -> m_last_update;
 
     // Читаем значение сигнала:
     stream >> value;
@@ -215,6 +215,9 @@ bool apak::SvExchangeSignals::bindSignal(modus::SvSignal* signal, modus::SignalB
             // Параметры сигналов описываются в подразделе "params", следующем за номером устройства,
             // к которому они привязаны.
             //apak::SignalParams signal_params = apak::SignalParams::fromJson(binding.params);
+
+            // Вставляем сигнал в список сигналов для передачи "m_signals_to_transmit":
+            m_signals_to_transmit.append(signal);
       }
     } // if(r)
 
@@ -262,7 +265,7 @@ void apak::SvExchangeSignals::start(void)
 // В этой функции мы обрабатываем принятый от другого МОС пакет сигналов.
 
 {
-    // 1. Привязываем вызов функции "sendSignals" ,в которой мы
+    // 1. Привязываем вызов функции "sendSignals", в которой мы
     // формируем пакет с информацией о сигналах к другому "mdserver"у, к наступлению таймаута
     // таймера посылки "m_sendTimer":
     m_sendTimer = new QTimer;
@@ -278,6 +281,8 @@ void apak::SvExchangeSignals::start(void)
     // В этой функции мы обрабатываем принятый от другого МОС пакет сигналов.
     connect(p_io_buffer, &modus::IOBuffer::dataReaded, this, &SvExchangeSignals::receiveSignals);
 
+    emit message(QString("МОС: Размер буфера между протокольной и интерфейсной частями: %1").arg(m_send_maxLen), sv::log::llInfo, sv::log::mtInfo);
+    qDebug() << QString("МОС: Размер буфера между протокольной и интерфейсной частями: %1").arg(m_send_maxLen);
 
     p_is_active = bool(p_config) && bool(p_io_buffer);
 }
@@ -301,69 +306,73 @@ void apak::SvExchangeSignals::sendSignals(void)
     // возможность его добавления к пакету. В случае невозможности - мы будем выдавать
     // сообщение оператору о том, что не все сигналы поместились в пакет.
 
-    qDebug() << "Размер буфера между протокольной и интерфейсной частями: " << m_send_maxLen;
-
-    // Очистим массив в котором будем формироваать пакет:
+    // Очистим массив в котором будем формировать пакет:
     m_send_data.clear();
 
     // Текущий размер пакета со значениями сигналов для передачи на другой МОС:
     unsigned send_currentLen = 0;
 
     // Массив байт для сериализации элементов пакета (заголовка и сигналов):
-    QByteArray sendElementArray;
+    QByteArray sendHeaderArray;
 
-    // Поток для сериализации элементов пакета (заголовка и сигналов):
-    QDataStream sendElementStream (&sendElementArray, QIODevice::WriteOnly);
+    // Поток для сериализации заголовка пакета:
+    QDataStream sendHeaderStream (&sendHeaderArray, QIODevice::WriteOnly);
 
     // Cначала сериализуем заголовок пакета. УСЛОВИМСЯ, что В ЗАГОЛОВКЕ:
     // - последовательность байт ВСЕГДА "BigEndian":
-    sendElementStream.setByteOrder(QDataStream::BigEndian);
+    sendHeaderStream.setByteOrder(QDataStream::BigEndian);
 
     // - версия формата сериализации данных библиотеки Qt: всегда "5.5":
-    sendElementStream.setVersion(QDataStream::Qt_5_5);
+    sendHeaderStream.setVersion(QDataStream::Qt_5_5);
 
-    sendElementStream << m_sendHeader;
+    sendHeaderStream << m_sendHeader;
 
-    qDebug() << "Размер заголовка: " << sendElementArray.length();
+    //qDebug() << "Размер заголовка: " << sendHeaderArray.length();
+    //qDebug() << "Содержание заголовка" << sendHeaderArray;
 
     // Добавим заголовок к пакету:
-    m_send_data.append(sendElementArray);
+    m_send_data.append(sendHeaderArray);
 
     // Вычислим текущий размер пакета:
-    send_currentLen = sendElementArray.length();
+    send_currentLen = sendHeaderArray.length();
 
     // В цикле пройдём по всем сигналам, намеченным к передаче.
 
     // Сначала:
-    //   - определим количество сигналов, намеченных для передачи:
-    uint numberOfSignals = m_signals_to_transmit.size();
+    //   - определим количество сигналов для передачи:
+    uint numberOfSignals = m_signals_to_transmit.size();   
+    //qDebug() << "Количество сигналов для передачи: " << numberOfSignals;
 
-    //   - установим параметры потока сериализации, согласно заданным
-    //     в конфигурационном файле для модуля МОС:
-
-    // 1. Параметр "номер версии формата сериализации данных библиотеки Qt":
-    sendElementStream.setVersion(m_sendHeader.version_Qt);
-
-    // 2. Параметр "порядок байт":
-    sendElementStream.setByteOrder((QDataStream::ByteOrder)m_sendHeader.byte_order);
-
-    // 3. Параметр "точность значений с плавающей точкой":
-    sendElementStream.setFloatingPointPrecision((QDataStream::FloatingPointPrecision)m_sendHeader.fp_precision);
 
     for (uint i = 0; i < numberOfSignals; i++)
     {
         // 1. Получаем указатель на текущий сериализуемый сигнал:
         modus::SvSignal* signal = m_signals_to_transmit.at (i);
 
-        // 2. Очищаем массив байт для сериализации элементов пакета:
-        sendElementArray.clear();
+        // 2. Массив байт для сериализации текущего (в цикле) сигнала:
+        QByteArray sendSignalArray;
 
-        // 3. Сериализуем текущий сигнал:
-        sendElementStream << *signal;
+        // 3. Поток для сериализации текущего (в цикле) сигнала:
+        QDataStream sendSignalStream (&sendSignalArray, QIODevice::WriteOnly);
 
-        // 4. Определяем размер сериализованного сигнала, и решаем хватит ли на него
+        // 4. Установим параметры потока сериализации, согласно заданным
+        //     в конфигурационном файле для модуля МОС:
+
+        // 4.1. Параметр "номер версии формата сериализации данных библиотеки Qt":
+        sendSignalStream.setVersion(m_sendHeader.version_Qt);
+
+        // 4.2. Параметр "порядок байт":
+        sendSignalStream.setByteOrder((QDataStream::ByteOrder)m_sendHeader.byte_order);
+
+        // 4.3. Параметр "точность значений с плавающей точкой":
+        sendSignalStream.setFloatingPointPrecision((QDataStream::FloatingPointPrecision)m_sendHeader.fp_precision);
+
+        // 5. Сериализуем текущий сигнал:
+        sendSignalStream << *signal;
+
+        // 6. Определяем размер сериализованного сигнала, и решаем хватит ли на него
         // места в буфере между протокольной и интерфейсной частями:
-        unsigned signalLen = sendElementArray.length();
+        unsigned signalLen = sendSignalArray.length();
 
         // Получаем имя сигнала:
         QString signalName = signal ->config() ->name;
@@ -383,7 +392,9 @@ void apak::SvExchangeSignals::sendSignals(void)
         }
 
         // Добавляем текущий сигнал к пакету:
-        m_send_data.append(sendElementArray);
+        m_send_data.append(sendSignalArray);
+
+        //qDebug() << "Сериализация сигнала: " << signalName << "Длина: " << signalLen << "Содержание: " << sendSignalArray.toHex();
 
         // Вычисляем текущий размер пакета:
         send_currentLen += signalLen;
@@ -419,12 +430,12 @@ void apak::SvExchangeSignals::receiveSignals(modus::BUFF* buffer)
     // Скопируем пакет, пришедший от другого МОС, в массив "m_receive_data":
     m_receive_data = QByteArray(buffer->data, buffer->offset);
 
-    // qDebug() << "МОС: Длина пакета, принятого от другого МОС: " << m_receive_data.length();
+    //qDebug() << "МОС: Длина пакета, принятого от другого МОС: " << m_receive_data.length();
 
     buffer->reset();
 
 
-    // Разбираемся с пакетом, принятым от другого МОС :
+    // Разбираемся с пакетом, принятым от другого МОС:
     // Создаём поток для десериализации пакета:
     QDataStream receiveStream (&m_receive_data, QIODevice::ReadOnly);
 
@@ -438,18 +449,20 @@ void apak::SvExchangeSignals::receiveSignals(modus::BUFF* buffer)
 
     receiveStream >> m_receiveHeader;
 
+
     // Разбираемся с параметрами, принятыми в заголовке:
     // 1. Параметр "магическое число":
     if (m_receiveHeader.magic_number != m_sendHeader.magic_number)
     { // Если не совпало "магическое число" в заголовке пакета:
 
         // Выводим сообщение оператору:
-        qDebug() << QString ("МОС: Магическое число в заголовке принятого пакета: %1 не совпало с числом, указанным в конфигурационном файле: %2").arg(m_receiveHeader.magic_number).arg(m_sendHeader.magic_number);
-        emit message(QString ("МОС: Магическое число в заголовке принятого пакета: %1 не совпало с числом, указанным в конфигурационном файле: %2").arg(m_receiveHeader.magic_number).arg(m_sendHeader.magic_number), sv::log::llError, sv::log::mtError);
+        qDebug() << QString ("МОС: Магическое число в заголовке принятого пакета: %1 не совпало с числом, указанным в конфигурационном файле: %2. Принимать сигналы не будем.").arg(m_receiveHeader.magic_number).arg(m_sendHeader.magic_number);
+        emit message(QString ("МОС: Магическое число в заголовке принятого пакета: %1 не совпало с числом, указанным в конфигурационном файле: %2. Принимать сигналы не будем.").arg(m_receiveHeader.magic_number).arg(m_sendHeader.magic_number), sv::log::llError, sv::log::mtError);
 
         // Дальше этот пакет не обрабатываем:
         return;
     }
+
 
     // 2. Параметр "версия протокола обмена между МОС" - пока не обрабатываем.
 
@@ -474,12 +487,13 @@ void apak::SvExchangeSignals::receiveSignals(modus::BUFF* buffer)
             receiveStream >> m_signal_by_id;
         }
         catch (SvException& e)
-        { // Перехватываем это исключение и выводим сообщение об ошибке пользователю:
+        { // Перехватываем это исключение и выводим сообщение об ошибке пользователю
+          // (обычно эта ошибка заключается в том, что десериализованный сигнал не привязан к МОС):
 
             emit message(e.error, sv::log::llError, sv::log::mtError);
             qDebug() << e.error;
         }
-    }
+    } // while
 
     return;
 }

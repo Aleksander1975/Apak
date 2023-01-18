@@ -5,6 +5,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QDataStream>
+#include <QDebug>
 
 #include "../../../../svlib/SvException/svexception.h"
 #include "../../../../Modus/global/global_defs.h"
@@ -56,7 +57,7 @@
 #define DEFAULT_EXCHANGE_PROTOCOL_VERSION 1
 
 // Значение по умолчанию для параметра "Магическое число в заголовке посылки между МОС":
-#define DEFAULT_MAGIC_NUMBER   0xF34D5397
+#define DEFAULT_MAGIC_NUMBER   2147483647
 
 
 namespace apak {
@@ -89,6 +90,13 @@ namespace apak {
     qint32 magic_number = 0;
 
     static ProtocolParams fromJson(const QString& json_string) //throw (SvException)
+    // Вход: строка, являющаяся отрывком, взятым из конфигурационного файла
+    // "config_apak.json" для сервера "mdserver", и содержащем информацию только
+    // о модуле МОС.
+
+    // Выход: Структура ProtocolParams, заполненная параметрами протокольной части
+    // устройства МОС.
+
     {
         QJsonParseError err;
         QJsonDocument jd = QJsonDocument::fromJson(json_string.toUtf8(), &err);
@@ -108,9 +116,7 @@ namespace apak {
     }
 
     static ProtocolParams fromJsonObject(const QJsonObject &object) //throw (SvException)
-    // Конструктор:
-
-    // Вход: строка, являющаяся отрывком, взятым из конфигурационного файла
+    // Вход: JSON-объект, созданный из строка, являющейся отрывком, взятым из конфигурационного файла
     // "config_apak.json" для сервера "mdserver", и содержащем информацию только
     // о модуле МОС.
 
@@ -212,29 +218,13 @@ namespace apak {
         P = P_MAGIC_NUMBER;
         if(object.contains(P))
         {
-            QString magicNumberString = object.value(P).toString();
-
-            if ( magicNumberString.isNull() == true)
-            {
+            if (object.value(P).toInt(0) == 0)
                 throw SvException(QString ("МОС: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
                                  .arg(P)
                                  .arg(object.value(P).toString())
-                                 .arg("Магическое число в заголовке посылки между МОС должно быть задано целым шестнадцатеричрым числом"));
-            }
+                                 .arg("Магическое число в заголовке посылки между МОС должно быть задано целым ненулевым числом от -2 147 483 648 до 2 147 483 647"));
 
-            bool ok;
-            quint32 magicNumber = magicNumberString.toUInt(&ok, 16);
-
-            if ( ok == false)
-            {
-                throw SvException(QString ("МОС: Ошибка при разборе параметров протокола: ") + QString(IMPERMISSIBLE_VALUE)
-                                 .arg(P)
-                                 .arg(object.value(P).toString())
-                                 .arg("Магическое число в заголовке посылки между МОС должно быть задано целым шестнадцатеричрым числом"));
-
-            }
-
-            p.magic_number = magicNumber;
+            p.magic_number = object.value(P).toInt(DEFAULT_MAGIC_NUMBER);
         }
         else
             p.magic_number = DEFAULT_MAGIC_NUMBER;
