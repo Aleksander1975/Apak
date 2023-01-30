@@ -241,6 +241,9 @@ void apak::SvExchangeSignalDebug::readSignals(void)
         // Получаем значение сигнала:
         QVariant signalValue = signal ->value();
 
+        // Получаем время последнего обновления сигнала:
+        QDateTime signalLastUpdate = signal->lastUpdate();
+
         // Проверяем валидно ли значение сигнала:
         if( signalValue.isValid() == false)
         {
@@ -265,9 +268,9 @@ void apak::SvExchangeSignalDebug::readSignals(void)
         const char * signalType = signalValue.typeName();
         QString signalTypeString = QString (signalType);
 
-        // Выводим оператору сообщение о типе и значении сигнала:
-        emit message(QString("МП МОС: Полученный черес МОС сигнал: %1 типа: %2 имеет значение: %3").arg(signalName).arg(signalTypeString).arg(signalValue.toString()), sv::log::llInfo, sv::log::mtInfo);
-        qDebug() << QString("МП МОС: Полученный черес МОС сигнал: %1 типа: %2 имеет значение: %3").arg(signalName).arg(signalTypeString).arg(signalValue.toString());
+        // Выводим оператору сообщение о типе, значении и времени последнего обновления сигнала:
+        emit message(QString("МП МОС: Полученный черес МОС сигнал: %1 типа: %2 имеет значение: %3, время последнего обновления: %4").arg(signalName).arg(signalTypeString).arg(signalValue.toString()).arg(signalLastUpdate.toString(Qt::ISODate)), sv::log::llInfo, sv::log::mtInfo);
+        qDebug() << QString("МП МОС: Полученный черес МОС сигнал: %1 типа: %2 имеет значение: %3,  время последнего обновления: %4").arg(signalName).arg(signalTypeString).arg(signalValue.toString()).arg(signalLastUpdate.toString(Qt::ISODate));
     } // foreach
 
     return;

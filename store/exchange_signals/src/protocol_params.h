@@ -13,10 +13,10 @@
 
 
 // === Имена параметров, используемых при описании протокольной библиотеки МОС
-// (модуля обмена сигналами) "libapak_exchange_signals_module" ===
+// === (модуля обмена сигналами) "libapak_exchange_signals_module" ===
 // === в файле описания устройств "config_apak.json": ===
 
-// Имя параметра "Период посылки сигналов к другому "mdserver"у":
+// Имя параметра "Период посылки сигналов к другому "mdserver"у (в мс)":
 #define P_SEND_INTERVAL       "send_interval"
 
 // Имя параметра "Порядок байт". Возможные значения этого
@@ -37,9 +37,37 @@
 #define P_EXCHANGE_PROTOCOL_VERSION "protocol_version"
 
 // Имя параметра "Магическое число в заголовке посылки между МОС":
-// в шестнадцатеричной системе, 32-х разрядное - оно позволит нам проверить, что
-// это посылка обмена сигналами между МОС.
-#define P_MAGIC_NUMBER   "magic_number"
+// Должно быть задано целым ненулевым числом от -2 147 483 648 до 2 147 483 647.
+// Магическое число позволит нам проверить, что это посылка обмена сигналами между МОС.
+#define P_MAGIC_NUMBER  "magic_number"
+
+
+// === Описания параметров, используемых при описании протокольной библиотеки МОС
+// === (модуля обмена сигналами) "libapak_exchange_signals_module" ===
+// === в файле описания устройств "config_apak.json": ===
+
+
+#define P_SEND_INTERVAL_DESC    "период посылки сигналов к другому \'mdserver\'у (в мс)."
+
+
+#define P_BYTE_ORDER_DESC    "порядок байт в многобайтовых числах."
+
+
+#define P_FLOATING_POINT_PRECISION_DESC "точность значений с плавающей точкой."
+
+
+#define P_VERSION_QT_DESC       "номер версии формата сериализации данных библиотеки Qt."
+
+
+#define P_EXCHANGE_PROTOCOL_VERSION_DESC "номер версии протокола обмена между МОС. Представляется беззнаковым целым числом."
+
+
+#define P_MAGIC_NUMBER_DESC   "магическое число в заголовке посылки между МОС. Оно должно быть задано целым ненулевым числом от -2 147 483 648 до 2 147 483 647. Магическое число позволяет проверить то, что это посылка обмена сигналами между МОС."
+
+
+// === Значения по умолчанию для параметров, используемых при описании протокольной библиотеки МОС
+// === (модуля обмена сигналами) "libapak_exchange_signals_module" ===
+// === в файле описания устройств "config_apak.json": ===
 
 // Значение по умолчанию для параметра "Период посылки сигналов к другому "mdserver"у":
 #define DEFAULT_SEND_INTERVAL   1000
@@ -60,8 +88,15 @@
 #define DEFAULT_MAGIC_NUMBER   2147483647
 
 
-namespace apak {
+#define MAKE_PARAM_STR_3(NAME, MEAN, TYPE, REQ, DEF, RANGE, EOL)      QString("  {\"name\": \"") + \
+    QString(NAME) + QString ("\", \"mean\": \"") + QString (MEAN) + \
+    QString("\", \"type\": \"") + QString(TYPE) + QString ("\", \"required\": ") + \
+    QString (REQ) + QString (", \"default\": \"") + QString(DEF) + QString("\", \"range\": \"") + \
+    QString (RANGE) + QString ("\"}") + QString (EOL)
 
+
+namespace apak
+{
   struct ProtocolParams
    // Структура, хранящая параметры протокола обмена между МОС:
    //       - Период посылки сигналов к другому "mdserver"у,

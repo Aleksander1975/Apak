@@ -57,7 +57,6 @@ inline QDataStream& operator>> (QDataStream &stream, QMap <int, modus::SvSignal*
         //   к отсутствующему в словаре "signals_by_id" сигналу:
 
         // Читаем время последнего обновления сигнала:
-        // !!!--- НЕТ ВОЗМОЖНОСТИ УСТАНОВКИ ВРЕМЕНИ ПОСЛЕДНЕГО ОБНОВЛЕНИЯ СИГНАЛА ---!!!
         stream >> dataTime;
 
         // Читаем значение сигнала:
@@ -72,12 +71,13 @@ inline QDataStream& operator>> (QDataStream &stream, QMap <int, modus::SvSignal*
     modus::SvSignal *signal = signals_by_id.value(signalCfg.id);
 
     // Читаем время последнего обновления сигнала:
-    // !!!--- НЕТ ВОЗМОЖНОСТИ УСТАНОВКИ ВРЕМЕНИ ПОСЛЕДНЕГО ОБНОВЛЕНИЯ СИГНАЛА ---!!!
-    stream >> dataTime; // stream >> signal -> m_last_update;
+    stream >> dataTime;
 
     // Читаем значение сигнала:
     stream >> value;
-    signal -> setValue(value);
+
+    // Устанавливаем поля "значения сигнала" и "времени последнего обновления сигнала":
+    signal -> setValue(value, dataTime);
 
     return stream;
 }
@@ -97,7 +97,7 @@ inline QDataStream& operator>> (QDataStream &stream, modus::SignalConfig& signal
 
 apak::SvExchangeSignals::SvExchangeSignals():
   modus::SvAbstractProtocol()
-// Инициализация структур данных, необходимых для формирования пакета К другому МОС
+// Инициализация структур данных, необходимых для формирования пакета К другому модулю МОС
 // и обработки пактов ОТ другого МОС.
 
 {
@@ -120,7 +120,7 @@ apak::SvExchangeSignals::~SvExchangeSignals()
 bool apak::SvExchangeSignals::configure(modus::DeviceConfig *config, modus::IOBuffer *iobuffer)
 // Эта функция вызывается серевером "mdserver" для всех устройств.
 // Её цель - инициализировать все структуры, необходимые нам для сигналов конкретного
-// устройства (в данном случае, модуля обмена сигналами).
+// устройства (в данном случае, модуля МОС).
 {
     try
     {
@@ -169,16 +169,17 @@ bool apak::SvExchangeSignals::configure(modus::DeviceConfig *config, modus::IOBu
 
 bool apak::SvExchangeSignals::bindSignal(modus::SvSignal* signal, modus::SignalBinding binding)
 // Эта функция вызывается сервером "mdserver" для всех сигналов, связанных с модулем обмена
-// сигналами. Сигналы, передаваемые ЭТИМ модулем обмена сигналами на ДРУГОЙ "mdserver" будут
-// иметь привязку к ЭТОМУ модулю - "binding". Сигналы, принимаемые от ДРУГОГО "mdserver"а
+// сигналами. Сигналы, передаваемые ЭТИМ модулем обмена сигналами на ДРУГОЙ "mdserver", будут
+// иметь привязку к ЭТОМУ модулю - "binding". Сигналы, принимаемые от ДРУГОГО "mdserver"а,
 // будут иметь привязку к ЭТОМУ модулю - "master".
 
 // Цель этой функции состоит в получении всех параметров для каждого сигнала и заполнении
 // в соответствии с ними структур данных (перечисленных в файле "exchange_signals.h"),
-// необходимых для их передачи на другой "mdserver"ИЛИ приёма от другого "mdserver"а.
+// необходимых для передачи информации о сигналах на другой "mdserver"ИЛИ
+// приёма этой информации от другого "mdserver"а.
 
 // НА ДАННЫЙ МОМЕНТ мы не используем никакие параметры сигналов. Однако в будущем они, возможно,
-// пригодятся (например, период с которым сигналы передаются на другой МОС может задаваться
+// пригодятся (например, период, с которым сигналы передаются на другой МОС, может задаваться
 // различным для разных групп сигналов).
 {
   try {
@@ -408,7 +409,7 @@ void apak::SvExchangeSignals::sendSignals(void)
 
 
 void apak::SvExchangeSignals::receiveSignals(modus::BUFF* buffer)
-// Последовательно читаем данные из пакета, принятого от другого МОС.
+// Обрабатываем пакет с информацией о сигналах, принятый от другого модуля МОС:
 {
     //qDebug() << "MOC: receiveSignals";
 
@@ -538,6 +539,34 @@ void apak::SvExchangeSignals::transferToInterface (QByteArray data)
 }
 
 
+QString enumBigEndian (int endianType)
+{
+    switch (endianType)
+    {
+        case QDataStream::BigEndian:
+            return QString("BigEndian");
+        case QDataStream::LittleEndian:
+            return QString("LittleEndian");
+        default:
+            return QString("Ошибка");
+    }
+}
+
+QString enumFloatingPointPrecision (int floatingPointPrecision)
+{
+    switch(floatingPointPrecision)
+    {
+        case QDataStream::SinglePrecision:
+            return QString ("SinglePrecision");
+        case QDataStream::DoublePrecision:
+            return QString ("DoublePrecision");
+        default:
+            return QString("Ошибка");
+    }
+
+    return (QString());
+}
+
 /** ********** EXPORT ************ **/
 modus::SvAbstractProtocol* create()
 {
@@ -545,3 +574,61 @@ modus::SvAbstractProtocol* create()
   return protocol;
 }
 
+
+const char* getVersion()
+{
+  return LIB_VERSION;
+}
+
+// Размер массива В БАЙТАХ, хранящего описание параметров модуля МОС:
+#define MAX_BYTES_OF_DESCRIPTION_PARAMS 2000
+
+// Массив, который хранит описание параметров модуля МОС:
+char usage[MAX_BYTES_OF_DESCRIPTION_PARAMS + 1] = "";
+
+const char* getParams()
+{
+    QString usageString = QString ("{\"params\": [\n") +
+        MAKE_PARAM_STR_3(P_SEND_INTERVAL, P_SEND_INTERVAL_DESC, "quint16", "false",
+                         QString("%1").arg(DEFAULT_SEND_INTERVAL), "1 - 65535", ",\n") +
+
+        MAKE_PARAM_STR_3(P_BYTE_ORDER, P_BYTE_ORDER_DESC, "перечисление", "false",
+                         enumBigEndian(DEFAULT_BYTE_ORDER), "\'BigEndian\' и \'LittleEndian\'", ",\n") +
+
+        MAKE_PARAM_STR_3(P_FLOATING_POINT_PRECISION, P_FLOATING_POINT_PRECISION_DESC, "перечисление", "false",
+                         enumFloatingPointPrecision (DEFAULT_FLOATING_POINT_PRECISION), "\'SinglePrecision\' и \'DoublePrecision\'", ",\n") +
+
+        MAKE_PARAM_STR_3(P_VERSION_QT, P_VERSION_QT_DESC, "перечисление", "false",
+                         QString("%1").arg(DEFAULT_VERSION_QT), "Численные значения любых констант из перечисления  \'QDataStream::Version\'", ",\n") +
+
+        MAKE_PARAM_STR_3(P_EXCHANGE_PROTOCOL_VERSION, P_EXCHANGE_PROTOCOL_VERSION_DESC,  "quint16", "false",
+                         QString("%1").arg(DEFAULT_EXCHANGE_PROTOCOL_VERSION),  "1 - 65535", ",\n") +
+
+        MAKE_PARAM_STR_3(P_MAGIC_NUMBER, P_MAGIC_NUMBER_DESC, "qint32", "false",
+                         QString("%1").arg(DEFAULT_MAGIC_NUMBER), "-2147483648 - 2147483647", "\n") +
+
+        QString("]}");
+        //qDebug() << "QString" <<usageString << usageString.length();
+
+        QByteArray usageByteArray = usageString.toUtf8();
+        usageByteArray.truncate(MAX_BYTES_OF_DESCRIPTION_PARAMS);
+        usageByteArray.append('\0');
+        //qDebug() << "QByteArray"<< usageByteArray << usageByteArray.length();
+
+        strcpy(usage, usageByteArray.constData());
+        //qDebug() << "char *" << usage << strlen(usage);
+
+    return usage;
+}
+
+
+const char* getInfo()
+{
+  return LIB_SHORT_INFO;
+}
+
+
+const char* getDescription()
+{
+  return LIB_DESCRIPTION;
+}
