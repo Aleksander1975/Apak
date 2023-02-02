@@ -4,6 +4,12 @@ DEFINES += KSON_PACKET_LIBRARY
 
 CONFIG += c++11 plugin
 
+
+VERSION =   1.0.0    # major.minor.patch
+DEFINES +=  LIB_VERSION=\\\"$$VERSION\\\"
+DEFINES += "LIB_AUTHOR=\"\\\"Кон А.М.\\\"\""
+
+
 TARGET = /home/user/Modus/lib/protocols/apak_kson_packet
 TEMPLATE = lib
 

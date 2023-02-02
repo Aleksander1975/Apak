@@ -21,7 +21,7 @@
 
 // Имя параметра "предельно допустимое время от передачи информационного кадра КСОН'у
 // до получения пакета подтверждения от КСОН'a":
-#define CONFORM_INTERVAL   "conform_interval"
+#define CONFIRM_INTERVAL   "confirm_interval"
 
 // Имя параметра "размер информационного блока в информационном кадре ПОСЫЛАЕМОМ АПАК к КСОН":
 #define SEND_DATA_LEN        "send_data_len"
@@ -32,6 +32,26 @@
 // Имя параметра "предельно допустимое количество идущих подряд ошибок взаимодействия":
 #define NUMBER_OF_ERRORS "number_errror"
 
+// === Описание параметров, используемых при описании протокольной библиотеки "libapak_kson_packet" ===
+// === для работы с устройством КСОН в файле описания устройств "config_apak.json": ===
+
+#define SEND_INTERVAL_DESC       "период поступления данных от АПАК к КСОН (в мс)"
+
+#define RECEIVE_INTERVAL_DESC    "предельно допустимое время между информационными кадрами от КСОН (в мс)"
+
+#define CONFIRM_INTERVAL_DESC    "предельно допустимое время от передачи информационного кадра КСОН'у " \
+                                 "до получения пакета подтверждения от КСОН'a (в мс)"
+
+#define SEND_DATA_LEN_DESC       "размер информационного блока в байтах в информационном кадре ПОСЫЛАЕМОМ АПАК к КСОН"
+
+#define RECEIVE_DATA_LEN_DESC    "размер информационного блока в байтах в информационном кадре ПРИНИМАЕМОМ АПАК от КСОН"
+
+#define NUMBER_OF_ERRORS_DESC    "предельно допустимое количество идущих подряд ошибок взаимодействия"
+
+
+// === Значения по умолчанию для параметров, используемых при описании протокольной библиотеки  ===
+// === "libapak_kson_packet" для работы с устройством КСОН в файле описания устройств "config_apak.json": ===
+
 // Значение по умолчанию для параметра "период поступления данных от АПАК к КСОН":
 #define DEFAULT_SEND_INTERVAL   1000
 
@@ -41,7 +61,7 @@
 
 // Значение по умолчанию для параметра "предельно допустимое время от передачи информационного кадра КСОН'у
 // до получения пакета подтверждения от КСОН'a":
-#define DEFAULT_CONFORM_INTERVAL  200
+#define DEFAULT_CONFIRM_INTERVAL  200
 
 // Значение по умолчанию для параметра "размер информационного блока
 // в информационном кадре ПОСЫЛАЕМОМ АПАК к КСОН":
@@ -55,6 +75,12 @@
 // количество идущих подряд ошибок взаимодействия":
 #define DEFAULT_NUMBER_OF_ERRORS  3
 
+// Макроопределение для формирования описания параметров протокола, используемое в функции "getParams":
+#define MAKE_PARAM_STR_3(NAME, MEAN, TYPE, REQ, DEF, RANGE, EOL)      QString("  {\"name\": \"") + \
+    QString(NAME) + QString ("\", \"mean\": \"") + QString (MEAN) + \
+    QString("\", \"type\": \"") + QString(TYPE) + QString ("\", \"required\": ") + \
+    QString (REQ) + QString (", \"default\": \"") + QString(DEF) + QString("\", \"range\": \"") + \
+    QString (RANGE) + QString ("\"}") + QString (EOL)
 
 
 namespace apak {
@@ -77,7 +103,7 @@ namespace apak {
 
     // Предельно допустимое время от передачи информационного кадра КСОН'у
     // до получения пакета подтверждения от КСОН'a:
-    quint16 conform_interval = 0;
+    quint16 confirm_interval = 0;
 
     // Размер информационного блока в информационном кадре ПОСЫЛАЕМОМ АПАК к КСОН:
     quint16 send_data_len = 0;
@@ -151,7 +177,7 @@ namespace apak {
 
       // Считываем значение параметра "предельно допустимое время от передачи информационного кадра КСОН'у
       // до получения пакета подтверждения от КСОН'a":
-      P = CONFORM_INTERVAL;
+      P = CONFIRM_INTERVAL;
       if(object.contains(P))
       {
         if(object.value(P).toInt(-1) < 0)
@@ -160,10 +186,10 @@ namespace apak {
                                  .arg(object.value(P).toString())
                                  .arg("Предельно допустимый интервал между информационным кадром и пакетом подтверждения должен быть задан целым числом в миллисекундах"));
 
-        p.conform_interval = object.value(P).toInt(DEFAULT_CONFORM_INTERVAL);
+        p.confirm_interval = object.value(P).toInt(DEFAULT_CONFIRM_INTERVAL);
       }
       else
-        p.conform_interval = DEFAULT_CONFORM_INTERVAL;
+        p.confirm_interval = DEFAULT_CONFIRM_INTERVAL;
 
       // Считываем значение параметра "размер информационного блока в информационном кадре ПОСЫЛАЕМОМ АПАК к КСОН":
       P = SEND_DATA_LEN;
@@ -227,7 +253,7 @@ namespace apak {
 
       j.insert (SEND_INTERVAL,     QJsonValue(send_interval).toInt());
       j.insert (RECEIVE_INTERVAL,  QJsonValue(receive_interval).toInt());
-      j.insert (CONFORM_INTERVAL,  QJsonValue(conform_interval).toInt());
+      j.insert (CONFIRM_INTERVAL,  QJsonValue(confirm_interval).toInt());
       j.insert (SEND_DATA_LEN,     QJsonValue(send_data_len).toInt());
       j.insert (RECEIVE_DATA_LEN,  QJsonValue(receive_data_len).toInt());
       j.insert (NUMBER_OF_ERRORS,  QJsonValue(numberOfErrors).toInt());

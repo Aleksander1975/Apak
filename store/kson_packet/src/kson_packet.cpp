@@ -359,7 +359,7 @@ void apak::SvKsonPacket::start(void)
 // информационного кадра от КСОН.
 // 3. Запускаем таймер приёма "m_receiveTimer".
 // 4. Привязываем вызов функции "noConfirmationPackage" к наступлению таймаута
-// таймера подтверждения "m_conformTimer". В этой функции мы будем фиксировать
+// таймера подтверждения "m_confirmTimer". В этой функции мы будем фиксировать
  // ошибку взаимодействия КСОН и АПАК.
 // 5. Привязку вызова функции "sendInformFrame" , в которой мы
 // формируем информационный кадр от системы АПАК к сети КСОН, к наступлению таймаута
@@ -389,11 +389,11 @@ void apak::SvKsonPacket::start(void)
     m_receiveTimer->start(m_params.receive_interval);
 
     // 4. Привязываем вызов функции "noConfirmationPackage" к наступлению таймаута
-    // таймера подтверждения "m_conformTimer". В этой функции мы будем фиксировать
+    // таймера подтверждения "m_confirmTimer". В этой функции мы будем фиксировать
     // ошибку взаимодействия КСОН и АПАК:
-    m_conformTimer = new QTimer;
-    m_conformTimer->setSingleShot(true);
-    connect(m_conformTimer, &QTimer::timeout, this, &SvKsonPacket::noConfirmationPackage);
+    m_confirmTimer = new QTimer;
+    m_confirmTimer->setSingleShot(true);
+    connect(m_confirmTimer, &QTimer::timeout, this, &SvKsonPacket::noConfirmationPackage);
 
     // 5. Привязку вызова функции "sendInformFrame" , в которой мы
     // формируем информационный кадр от системы АПАК к сети КСОН, к наступлению таймаута
@@ -425,7 +425,7 @@ void apak::SvKsonPacket::sendInformFrame(void)
 // системы АПАК к сети КСОН  (в соответствии с протоколом обмена).
 // 2. Инициируем передачу этого кадра от протокольной к интерфейcной части
 // (для передачи по линии связи).
-// 3. Запускаем таймер подтверждения "m_conformTimer", который отсчитывает
+// 3. Запускаем таймер подтверждения "m_confirmTimer", который отсчитывает
 // предельно допустимое время от посылки нами информационного кадра к сети КСОН,
 // до получения нами пакета подтверждения от сети КСОН.
 
@@ -589,11 +589,11 @@ void apak::SvKsonPacket::sendInformFrame(void)
      // 2. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
      transferToInterface (m_send_data);
 
-     // 3. Запускаем таймер подтверждения "m_conformTimer" с периодом,
+     // 3. Запускаем таймер подтверждения "m_confirmTimer" с периодом,
      // равным предельно допустимому времени от посылки нами информационного кадра к сети КСОН,
      // до получения нами пакета подтверждения от сети КСОН. Это время
      // задаётся  в конфигурационном файле "config_apak.json", как параметр протокола устройства КСОН:
-     m_conformTimer->start(m_params.conform_interval);
+     m_confirmTimer->start(m_params.confirm_interval);
 }
 
 
@@ -979,7 +979,7 @@ void  apak::SvKsonPacket::confirmationPackageFrom_KSON (QByteArray packageFrom_K
 // Аргумент функции: "packageFrom_KSON" - содержит пакет подтверждения от КСОН.
 {
     // Останавливаем таймер подтверждения:
-    m_conformTimer->stop();
+    m_confirmTimer->stop();
 
     // Аргумент функции: "packageFrom_KSON" - содержит пакет подтверждения от КСОН.
     // Правильность пакета подтверждения в данной версии протокола можно проверить
@@ -1065,10 +1065,10 @@ void apak::SvKsonPacket::noConfirmationPackage(void)
 // пакет подтверждения так и не пришёл.
 {
     // 1. Отрабатываем ошибку протокола:
-    protocolErrorHandling(QString("АПАК-КСОН: Пакет подтверждения от КСОН за время: %1 не получен").arg(m_params.conform_interval));
+    protocolErrorHandling(QString("АПАК-КСОН: Пакет подтверждения от КСОН за время: %1 не получен").arg(m_params.confirm_interval));
 
     // 2. Даже если пакета подтверждения не пришло в течении оговоренного в протоколе времени
-    // (m_params.conform_interval), то мы всё равно запускаем на единственное срабатывание
+    // (m_params.confirm_interval), то мы всё равно запускаем на единственное срабатывание
     // "таймер посылки m_sendTimer", чтобы продолжать посылать информационные кадры к КСОН:
     m_sendTimer->start(m_params.send_interval);
 }
@@ -1236,3 +1236,63 @@ modus::SvAbstractProtocol* create()
   return protocol;
 }
 
+
+const char* getVersion()
+{
+  return LIB_VERSION;
+}
+
+
+// Размер массива В БАЙТАХ, хранящего описание параметров библиотеки АПАК для работы с КСОН:
+#define MAX_BYTES_OF_DESCRIPTION_PARAMS 2000
+
+// Массив, который хранит описание параметров библиотеки АПАК для работы с КСОН:
+char usage[MAX_BYTES_OF_DESCRIPTION_PARAMS + 1] = "";
+
+
+const char* getParams()
+{
+    QString usageString = QString ("{\"params\": [\n") +
+        MAKE_PARAM_STR_3(SEND_INTERVAL, SEND_INTERVAL_DESC, "quint16", "false",
+                         QString("%1").arg(DEFAULT_SEND_INTERVAL), "1 - 65535", ",\n") +
+
+        MAKE_PARAM_STR_3(RECEIVE_INTERVAL, RECEIVE_INTERVAL_DESC, "quint16", "false",
+                         QString("%1").arg(DEFAULT_RECEIVE_INTERVAL), "1 - 65535", ",\n") +
+
+        MAKE_PARAM_STR_3(CONFIRM_INTERVAL, CONFIRM_INTERVAL_DESC, "quint16", "false",
+                         QString("%1").arg(DEFAULT_CONFIRM_INTERVAL), "1 - 65535", ",\n") +
+
+        MAKE_PARAM_STR_3(SEND_DATA_LEN, SEND_DATA_LEN_DESC, "quint16", "false",
+                         QString("%1").arg(DEFAULT_SEND_DATA_LEN), "1 - 65535", ",\n") +
+
+        MAKE_PARAM_STR_3(RECEIVE_DATA_LEN, RECEIVE_DATA_LEN_DESC,  "quint16", "false",
+                         QString("%1").arg(DEFAULT_RECEIVE_DATA_LEN), "1 - 65535", ",\n") +
+
+        MAKE_PARAM_STR_3(NUMBER_OF_ERRORS, NUMBER_OF_ERRORS_DESC,  "quint16", "false",
+                         QString("%1").arg(DEFAULT_NUMBER_OF_ERRORS), "1 - 65535", "\n") +
+
+        QString("]}");
+        qDebug() << "QString" <<usageString << usageString.length();
+
+        QByteArray usageByteArray = usageString.toUtf8();
+        usageByteArray.truncate(MAX_BYTES_OF_DESCRIPTION_PARAMS);
+        usageByteArray.append('\0');
+        qDebug() << "QByteArray"<< usageByteArray << usageByteArray.length();
+
+        strcpy(usage, usageByteArray.constData());
+        qDebug() << "char *" << usage << strlen(usage);
+
+    return usage;
+}
+
+
+const char* getInfo()
+{
+  return LIB_SHORT_INFO;
+}
+
+
+const char* getDescription()
+{
+  return LIB_DESCRIPTION;
+}
