@@ -217,7 +217,7 @@ void apak::SvKsonImitator::start(void)
 //    между получением информационных кадров от АПАК, заданному  в конфигурационном файле
 //   "config_apak_imitator.json", как параметр протокола устройства КСОН
 // 4. Привязываем вызов функции "noConfirmationPackage" к наступлению таймаута
-//    таймера подтверждения "m_conformTimer". В этой функции мы будем фиксировать
+//    таймера подтверждения "m_confirmTimer". В этой функции мы будем фиксировать
  //   ошибку взаимодействия КСОН и АПАК.
 // 5. Привязку вызова функции "sendInformFrame" , в которой мы
 //    формируем информационный кадр от имитатора сети КСОН к системе АПАК, к наступлению таймаута
@@ -248,11 +248,11 @@ void apak::SvKsonImitator::start(void)
     m_receiveTimer->start(m_params.receive_interval);
 
     // 4. Привязываем вызов функции "noConfirmationPackage" к наступлению таймаута
-    // таймера подтверждения "m_conformTimer". В этой функции мы будем фиксировать
+    // таймера подтверждения "m_confirmTimer". В этой функции мы будем фиксировать
     // ошибку взаимодействия КСОН и АПАК:
-    m_conformTimer = new QTimer;
-    m_conformTimer ->setSingleShot(true);
-    connect(m_conformTimer, &QTimer::timeout, this, &SvKsonImitator::noConfirmationPackage);
+    m_confirmTimer = new QTimer;
+    m_confirmTimer ->setSingleShot(true);
+    connect(m_confirmTimer, &QTimer::timeout, this, &SvKsonImitator::noConfirmationPackage);
 
     // 5. Привязку вызова функции "sendInformFrame", в которой мы
     // формируем информационный кадр от имитатора сети КСОН к системе АПАК, к наступлению таймаута
@@ -284,7 +284,7 @@ void apak::SvKsonImitator::sendInformFrame(void)
 // 1. Формируем и помещаем в массив байт "m_send_data" информационный кадр для передачи от имитатора
 // сети КСОН в систему АПАК (в соответствии с протоколом обмена)
 // 2. Инициируем передачу этого кадра от протокольной к интерфейcной части имитатора (для передачи по линии связи).
-// 3. Запускаем таймер подтверждения "m_conformTimer", который отсчитывает
+// 3. Запускаем таймер подтверждения "m_confirmTimer", который отсчитывает
 // предельно допустимое время от посылки нами информационного кадра в систему АПАК,
 // до получения нами пакета подтверждения от системы АПАК.
 
@@ -560,12 +560,12 @@ void apak::SvKsonImitator::sendInformFrame(void)
     // 8. Передаём данные от протокольной к интерфейcной части (для передачи по линии связи):
     transferToInterface (m_send_data);
 
-    // 9. Запускаем таймер подтверждения "m_conformTimer" с периодом,
+    // 9. Запускаем таймер подтверждения "m_confirmTimer" с периодом,
     // равным предельно допустимому времени от посылки нами информационного кадра к системе АПАК,
     // до получения нами пакета подтверждения от системы АПАК. Это время
     // задаётся  в конфигурационном файле "config_apak_imitator.json", как параметр протокола имитатора
     // устройства КСОН:
-    m_conformTimer->start(m_params.conform_interval);
+    m_confirmTimer->start(m_params.confirm_interval);
 }
 
 
@@ -844,7 +844,7 @@ void  apak::SvKsonImitator::confirmationPackageFrom_APAK (QByteArray packageFrom
 // Аргумент функции: "packageFrom_APAK" - содержит пакет подтверждения от АПАК.
 {
     // Останавливаем таймер подтверждения:
-    m_conformTimer->stop();
+    m_confirmTimer->stop();
 
     // Аргумент функции: "packageFrom_APAK" - содержит пакет подтверждения от АПАК.
     // Правильность пакета подтверждения в данной версии протокола можно проверить
@@ -928,10 +928,10 @@ void apak::SvKsonImitator::noConfirmationPackage(void)
 // пакет подтверждения так и не пришёл.
 {
     // 1. Отрабатываем ошибку протокола:
-    protocolErrorHandling(QString("Имитатор КСОН: Пакет подтверждения от АПАК за время: %1 не получен").arg(m_params.conform_interval));
+    protocolErrorHandling(QString("Имитатор КСОН: Пакет подтверждения от АПАК за время: %1 не получен").arg(m_params.confirm_interval));
 
     // 2. Даже если пакета подтверждения не пришло в течении оговоренного в протоколе времени
-    // (m_params.conform_interval), то мы всё равно запускаем на единственное срабатывание
+    // (m_params.confirm_interval), то мы всё равно запускаем на единственное срабатывание
     // "таймер посылки m_sendTimer", чтобы продолжать посылать информационные кадры к АПАК:
     m_sendTimer->start(m_params.send_interval);
 }
