@@ -372,3 +372,52 @@ modus::SvAbstractProtocol* create()
   return protocol;
 }
 
+
+const char* getVersion()
+{
+  return LIB_VERSION;
+}
+
+
+// Размер массива В БАЙТАХ, хранящего описание параметров библиотеки АПАК для синхронизации
+// сведений между ПУ_АПАК-1 и ПУ_АПАК-2 о состоянии подключённых к ним устройств:
+#define MAX_BYTES_OF_DESCRIPTION_PARAMS 2000
+
+
+// Массив, который хранит описание параметров библиотеки АПАК для синхронизации
+// сведений между ПУ_АПАК-1 и ПУ_АПАК-2 о состоянии подключённых к ним устройств:
+char usage[MAX_BYTES_OF_DESCRIPTION_PARAMS + 1] = "";
+
+
+const char* getParams()
+{
+    QString usageString = QString ("{\"params\": [\n") +
+
+        MAKE_PARAM_STR_3(SEND_INTERVAL, SEND_INTERVAL_DESC, "quint16", "false",
+                         QString("%1").arg(DEFAULT_SEND_INTERVAL), "1 - 65535", "\n") +
+
+        QString("]}");
+        //qDebug() << "QString" <<usageString << usageString.length();
+
+        QByteArray usageByteArray = usageString.toUtf8();
+        usageByteArray.truncate(MAX_BYTES_OF_DESCRIPTION_PARAMS);
+        usageByteArray.append('\0');
+        //qDebug() << "QByteArray"<< usageByteArray << usageByteArray.length();
+
+        strcpy(usage, usageByteArray.constData());
+        //qDebug() << "char *" << usage << strlen(usage);
+
+    return usage;
+}
+
+
+const char* getInfo()
+{
+  return LIB_SHORT_INFO;
+}
+
+
+const char* getDescription()
+{
+  return LIB_DESCRIPTION;
+}

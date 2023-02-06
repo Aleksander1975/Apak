@@ -10,14 +10,22 @@
 //#include "../../../../../Modus/global/device/device_defs.h"
 
 
-// === Имена параметров, используемых в файле описания устройств "config_apak.json",
-// === при описании протокольной библиотеки АПАК для обмена между ПУ АПАК: ===
-
 // Имя параметра "период посылки запроса POST к серверу другого ПУ АПАК":
 #define SEND_INTERVAL       "send_interval"
 
+// Описание параметра "период посылки запроса POST к серверу другого ПУ АПАК":
+#define SEND_INTERVAL_DESC       "период посылки запроса POST к серверу другого ПУ АПАК (в мс)"
+
 // Значение по умолчанию для параметра "период посылки запроса POST к серверу другого ПУ АПАК":
 #define DEFAULT_SEND_INTERVAL   1000
+
+
+// Макроопределение для формирования описания параметров протокола, используемое в функции "getParams":
+#define MAKE_PARAM_STR_3(NAME, MEAN, TYPE, REQ, DEF, RANGE, EOL)      QString("  {\"name\": \"") + \
+    QString(NAME) + QString ("\", \"mean\": \"") + QString (MEAN) + \
+    QString("\", \"type\": \"") + QString(TYPE) + QString ("\", \"required\": ") + \
+    QString (REQ) + QString (", \"default\": \"") + QString(DEF) + QString("\", \"range\": \"") + \
+    QString (RANGE) + QString ("\"}") + QString (EOL)
 
 
 namespace apak {
